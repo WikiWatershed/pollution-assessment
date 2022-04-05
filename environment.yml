@@ -1,0 +1,44 @@
+name: WikiSRAT
+channels:
+    - conda-forge
+    - defaults
+dependencies:
+    - python =3.8.*  # Py v3.8.10 was the final regular Py 3.8 release (May 3, 2021). https://www.python.org/downloads/release/python-3810/
+    - pandas >=1.3
+    - psycopg2 >=2.9.1
+
+    - geopandas
+    - sqlalchemy
+    - pyarrow
+    - pynhd
+    - geojson
+    - openpyxl
+
+
+    # Interactivity & Visualization via Jupyter Notebooks
+    - jupyterlab >=3.0.12
+    - nb_conda  # Conda environment & package access extension from within Jupyter
+    - ipywidgets  # Required for HoloViz interactivity
+    - matplotlib
+    - matplotlib-scalebar
+    - plotly
+    - contextily
+
+    # Optional extension dependencies for JupyterLab
+    - nodejs  # required for many extensions
+    - ipympl  # jupyter-matplotlib, https://github.com/matplotlib/ipympl
+
+    # Dev tools
+    # - python-language-server
+    - jupyter-lsp-python  # Includes both the server extension (jupyter-lsp) and pyls third-party server (python-language-server)
+    - jupyterlab-lsp # Docs at https://github.com/krassowski/jupyterlab-lsp
+
+    # package management
+    - conda
+    - conda-build
+
+    # PIP install requirements only if it is not  possible with conda
+    # https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html#using-pip-in-an-environment
+    - pip
+    - pip:
+        - lckr-jupyterlab-variableinspector  # https://github.com/lckr/jupyterlab-variableInspector

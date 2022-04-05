@@ -1,0 +1,16 @@
+,0
+catchment_hectares,140398.6929
+tp_load,52874.1814
+tn_load,767771.6722
+tss_load,113758317.4991
+tn_load_ps,0.0
+tp_load_ps,0.0
+tn_load_avoid,0.0
+tp_load_avoid,0.0
+tss_load_avoid,0.0
+tn_load_xsnps,-1628834.015603
+tp_load_xsnps,9350.586600999999
+tss_load_xsnps,-15941995.001919996
+tn_load_rem,-1628834.015603
+tp_load_rem,9350.586600999999
+tss_load_rem,-15941995.001919996

@@ -127,3 +127,20 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# Project-specific files & folders
+.virtual_documents
+cache
+
+db_config.txt
+db_config.json
+
+*.jupyterlab-workspace
+.~*
+~$*
+
+# Ignore raw data files and figures
+data/FieldDocExports
+*.gpkg
+*figs/
+*.svg
