@@ -139,8 +139,17 @@ db_config.json
 .~*
 ~$*
 
+#vscode
+.vscode
+.history
+
 # Ignore raw data files and figures
 data/FieldDocExports
 *.gpkg
 *figs/
 *.svg
+stage2/DRB_GWLFE/mmw_results/json_results/*
+
+
+mmw_secrets.py
+.gitignore
