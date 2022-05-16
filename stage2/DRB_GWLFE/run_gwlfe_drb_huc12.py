@@ -263,7 +263,7 @@ for idx, huc_aoi in enumerate(huc_list):
         gwlfe_metas.append(gwlfe_meta)
         gwlfe_summaries.append(gwlfe_summary)
 
-#%% join various result
+#%% join various results
 gwlfe_monthly_results = pd.concat(gwlfe_monthlies, ignore_index=True)
 gwlfe_load_sum_results = pd.concat(gwlfe_load_summaries, ignore_index=True)
 gwlfe_lu_load_results = pd.concat(gwlfe_lu_loads, ignore_index=True)
