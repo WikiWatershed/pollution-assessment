@@ -121,7 +121,7 @@ gwlfe_loads_t = gwlfe_loads_t.sort_index(axis=1)
 print("Differences between total loads from subbasins/SRAT and whole shapes")
 gwlfe_loads_t.loc[
     :, gwlfe_loads_t.columns.get_level_values("gwlfe_endpoint") == "diff"
-].groupby(by="Source").mean()
+].groupby(by="Source").agg(['mean','median'])
 #%%
 print("Differences between total loads from subbasins when run as HUC-12 vs HUC-10")
 gwlfe_loads_t.loc[
