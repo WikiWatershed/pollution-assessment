@@ -3,26 +3,12 @@ import pandas as pd
 import numpy as np
 
 #%%
-# Set up the API client
+# Read files
 from mmw_secrets import (
     csv_path,
 )
 
 frames = []
-
-# Subbasins, starting as single huc12
-sb_load_sum_results = pd.read_csv(csv_path + "gwlfe_sb_load_summaries.csv")
-frames.append(sb_load_sum_results)
-
-sb_source_loads_results = pd.read_csv(csv_path + "gwlfe_sb_source_summaries.csv")
-frames.append(sb_source_loads_results)
-
-srat_rates = pd.read_csv(csv_path + "srat_catchment_load_rates.csv")
-frames.append(srat_rates)
-
-srat_conc = pd.read_csv(csv_path + "srat_catchment_load_rates.csv")
-frames.append(srat_conc)
-
 
 # whole (non-subbasin)
 whole_metas_results = pd.read_csv(csv_path + "gwlfe_whole_metadata.csv")
@@ -39,6 +25,32 @@ frames.append(whole_load_sum_results)
 
 whole_source_loads_results = pd.read_csv(csv_path + "gwlfe_whole_source_summaries.csv")
 frames.append(whole_source_loads_results)
+
+
+# Attenuated subbasins, starting as single huc12 run from ModelMW
+sb_load_sum_results = pd.read_csv(csv_path + "gwlfe_sb_load_summaries.csv")
+frames.append(sb_load_sum_results)
+
+sb_source_loads_results = pd.read_csv(csv_path + "gwlfe_sb_source_summaries.csv")
+frames.append(sb_source_loads_results)
+
+srat_rates = pd.read_csv(csv_path + "srat_catchment_load_rates.csv")
+frames.append(srat_rates)
+
+srat_conc = pd.read_csv(csv_path + "srat_catchment_concs.csv")
+frames.append(srat_conc)
+
+
+# Attenuated subbasins, started using the whole results from ModelMW
+# and then run directly on WikiSRAT microservice
+wiki_source_loads_results = pd.read_csv(csv_path + "wikisrat_catchment_sources.csv")
+frames.append(wiki_source_loads_results)
+
+wiki_srat_rates = pd.read_csv(csv_path + "wikisrat_catchment_load_rates.csv")
+frames.append(wiki_srat_rates)
+
+wiki_srat_conc = pd.read_csv(csv_path + "wikisrat_catchment_concs.csv")
+frames.append(wiki_srat_conc)
 
 #%%
 for frame in frames:
@@ -162,7 +174,7 @@ srat_rates_t = srat_rates.drop_duplicates(
         # "stream_layer",
         # "weather_source",
         # "closest_weather_stations",
-        "catchment",
+        "comid",
         "huc_run_level",
         "Sediment",
         "TotalN",
@@ -174,7 +186,7 @@ srat_rates_t = srat_rates.drop_duplicates(
         # "stream_layer",
         # "weather_source",
         # "closest_weather_stations",
-        "catchment",
+        "comid",
     ],
     columns=["huc_run_level"],
     values=["Sediment", "TotalN", "TotalP"],
@@ -206,7 +218,7 @@ srat_conc_t = srat_conc.drop_duplicates(
         # "stream_layer",
         # "weather_source",
         # "closest_weather_stations",
-        "catchment",
+        "comid",
         "huc_run_level",
         "Sediment",
         "TotalN",
@@ -217,7 +229,7 @@ srat_conc_t = srat_conc.drop_duplicates(
         # "stream_layer",
         # "weather_source",
         # "closest_weather_stations",
-        "catchment",
+        "comid",
     ],
     columns=["huc_run_level"],
     values=["Sediment", "TotalN", "TotalP"],

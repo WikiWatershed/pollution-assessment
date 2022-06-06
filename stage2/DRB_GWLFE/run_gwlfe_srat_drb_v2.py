@@ -506,11 +506,26 @@ for idx, huc_row in hucs_to_run.iterrows():
         huc_result["gwlfe_whole_source_summaries"] = gwlfe_whole_sources
 
     if gwlfe_sb_result is not None:
+        gwlfe_sb_load_summary = pd.DataFrame(gwlfe_sb_result["SummaryLoads"], index=[1])
+        gwlfe_sb_sources = pd.DataFrame(gwlfe_sb_result["Loads"])
+
+        for frame in [
+            gwlfe_sb_load_summary,
+            gwlfe_sb_sources,
+        ]:
+            frame["gwlfe_endpoint"] = "subbasin"
+            frame["huc"] = huc_row["huc"]
+            frame["huc_level"] = huc_row["huc_level"]
+
+        huc_result["gwlfe_sb_load_summaries"] = gwlfe_sb_load_summary
+        huc_result["gwlfe_sb_source_summaries"] = gwlfe_sb_sources
+
+        huc_srat_catchments = []
         for huc12 in gwlfe_sb_result["HUC12s"].keys():
-            gwlfe_sb_load_summary = pd.DataFrame(
-                gwlfe_sb_result["HUC12s"][huc12]["SummaryLoads"], index=[1]
-            )
-            gwlfe_sb_sources = pd.DataFrame(gwlfe_sb_result["HUC12s"][huc12]["Loads"])
+            # gwlfe_sb_load_summary = pd.DataFrame(
+            #     gwlfe_sb_result["HUC12s"][huc12]["SummaryLoads"], index=[1]
+            # )
+            # gwlfe_sb_sources = pd.DataFrame(gwlfe_sb_result["HUC12s"][huc12]["Loads"])
             huc_srat_catchments = []
             for catchment in gwlfe_sb_result["HUC12s"][huc12]["Catchments"].keys():
                 catch_frame = pd.DataFrame.from_dict(
@@ -519,22 +534,10 @@ for idx, huc_row in hucs_to_run.iterrows():
                 )
                 catch_frame["comid"] = catchment
                 huc_srat_catchments.append(catch_frame)
-            if len(huc_srat_catchments) > 0:
-                huc_srat_catchments2 = pd.concat(
-                    huc_srat_catchments, ignore_index=False
-                )
+        if len(huc_srat_catchments) > 0:
+            huc_srat_catchments2 = pd.concat(huc_srat_catchments, ignore_index=False)
+            huc_srat_catchments2["gwlfe_endpoint"] = "subbasin"
 
-            for frame in [
-                gwlfe_sb_load_summary,
-                gwlfe_sb_sources,
-                huc_srat_catchments2,
-            ]:
-                frame["gwlfe_endpoint"] = "subbasin"
-                frame["huc"] = huc12
-                frame["huc_level"] = 12
-
-            huc_result["gwlfe_sb_load_summaries"] = gwlfe_sb_load_summary
-            huc_result["gwlfe_sb_source_summaries"] = gwlfe_sb_sources
             huc_result["srat_catchment_load_rates"] = huc_srat_catchments2.loc[
                 huc_srat_catchments2.index == "TotalLoadingRates"
             ].copy()
@@ -549,10 +552,11 @@ for idx, huc_row in hucs_to_run.iterrows():
             huc_result["wikisrat_huc_sources"] = (
                 format_wikisrat_return(h12_cpy, "huc12")["sources"].copy().reset_index()
             )
-            catch_result={
-                "wikisrat_catchment_load_rates":[],
-                "wikisrat_catchment_concs":[],
-                "wikisrat_catchment_sources":[],}
+            catch_result = {
+                "wikisrat_catchment_load_rates": [],
+                "wikisrat_catchment_concs": [],
+                "wikisrat_catchment_sources": [],
+            }
             for catchment, catch_sources in h12_catches.items():
                 catch_loads = format_wikisrat_return(catch_sources, huc=huc12)
                 catch_result["wikisrat_catchment_load_rates"].append(
@@ -650,11 +654,11 @@ gwlfe_sb_source_summaries.sort_values(by=["huc"] + ["Source"]).reset_index(
     drop=True
 ).to_csv(csv_path + "gwlfe_sb_source_summaries" + csv_extension)
 
-srat_catchment_load_rates.sort_values(by=["huc", "comid"]).reset_index(
+srat_catchment_load_rates.sort_values(by=["huc_run", "comid"]).reset_index(
     drop=True
 ).to_csv(csv_path + "srat_catchment_load_rates" + csv_extension)
 
-srat_catchment_concs.sort_values(by=["huc", "comid"]).reset_index(drop=True).to_csv(
+srat_catchment_concs.sort_values(by=["huc_run", "comid"]).reset_index(drop=True).to_csv(
     csv_path + "srat_catchment_concs" + csv_extension
 )
 
@@ -664,9 +668,9 @@ wikisrat_huc_sources.sort_values(by=["huc"]).reset_index(drop=True).to_csv(
 wikisrat_catchment_load_rates.sort_values(by=["huc", "comid"]).reset_index(
     drop=True
 ).to_csv(csv_path + "wikisrat_catchment_load_rates" + csv_extension)
-wikisrat_catchment_concs.sort_values(by=["huc", "comid"]).reset_index(
-    drop=True
-).to_csv(csv_path + "wikisrat_catchment_concs" + csv_extension)
+wikisrat_catchment_concs.sort_values(by=["huc", "comid"]).reset_index(drop=True).to_csv(
+    csv_path + "wikisrat_catchment_concs" + csv_extension
+)
 wikisrat_catchment_sources.sort_values(by=["huc", "comid"]).reset_index(
     drop=True
 ).to_csv(csv_path + "wikisrat_catchment_sources" + csv_extension)
