@@ -1,4 +1,5 @@
 #%%
+from mailbox import linesep
 import numpy as np
 import pandas as pd
 import geopandas as gpd
@@ -15,15 +16,14 @@ import datashader.transfer_functions as tf
 
 import holoviews as hv
 from holoviews import dim, opts, Options
-from holoviews.operation.datashader import (
-    rasterize, datashade, inspect_polygons
-)
+from holoviews.operation.datashader import rasterize, datashade, inspect_polygons
 
 import geoviews as gv
 import geoviews.tile_sources as gvts
 
 import panel as pn
 from bokeh.resources import INLINE
+from bokeh.models import HoverTool
 
 pd.options.plotting.backend = "holoviews"
 pn.extension(comms="vscode")
@@ -89,7 +89,7 @@ font_sizes = {
 opts.defaults(
     opts.Scatter(
         xlabel="Year",
-        width=1024,
+        # width=1024,
         size=8,
         legend_position="top_left",
         cmap="glasbey",
@@ -110,11 +110,11 @@ opts.defaults(
         editable=False,
         fit_columns=True,
         sortable=False,
-        width=1024,
+        # width=1024,
     ),
     opts.Tiles(
-        height=300,
-        width=250,
+        # height=300,
+        # width=250,
         xaxis=None,
         yaxis=None,
         active_tools=["pan", "wheel_zoom"],
@@ -132,7 +132,7 @@ print("Reading the HUC-12 names and shapes")
 huc12_shapes = gpd.read_file(
     save_path + "HUC12s in 020401, 020402, 020403 v2.json",
 )
-huc12_shapes = huc12_shapes.set_crs("EPSG:3857").to_crs("EPSG:4326")
+huc12_shapes = huc12_shapes.set_crs("EPSG:3857")
 huc12_shapes2 = (
     huc12_shapes.sort_values(by=["huc12"])
     .reset_index(drop=True)
@@ -146,7 +146,7 @@ print("Reading the HUC-10 names and shapes")
 huc10_shapes = gpd.read_file(
     save_path + "WBD_HUC10s.json",
 )
-huc10_shapes = huc10_shapes.set_crs("EPSG:3857").to_crs("EPSG:4326")
+huc10_shapes = huc10_shapes.set_crs("EPSG:3857")
 huc10_shapes["huc_level"] = 10
 huc10_shapes2 = (
     huc10_shapes.sort_values(by=["huc10"])
@@ -162,6 +162,7 @@ comid_geom_r = gpd.read_file(
     csv_path + "nhd_catchment_shapes.geojson", driver="GeoJSON"
 ).drop(columns="HUC10")
 comid_geom_r["huc"] = comid_geom_r["HUC12"].apply(lambda x: f"{x:012d}")
+comid_geom_r = comid_geom_r.to_crs("EPSG:3857")
 
 
 #%%
@@ -183,6 +184,15 @@ geo_df = GeoDataFrame(
 )
 geo_df["geom_type"] = geo_df["huc_level"].fillna("catchment")
 geo_df["geom_id"] = geo_df["comid"].fillna(geo_df["huc"])
+
+#%%
+# cross check for whether HUC's are really in the DRB interest region
+hucs_from_Mike = pd.read_csv(save_path + "huc12_list_drwipolassess.csv")
+hucs_from_Mike["huc12"] = hucs_from_Mike["huc12"].apply(lambda x: f"{x:012d}")
+drb_huc10s = hucs_from_Mike["huc12"].str.slice(0, 10).unique()
+drb_huc12s = hucs_from_Mike["huc12"].unique()
+# geo_df["in_drb"] = geo_df["huc"].isin(np.concatenate((drb_huc10s, drb_huc12s), axis=0))
+geo_df["in_drb"] = geo_df["huc"].str.slice(0, 10).isin(drb_huc10s)
 
 #%%
 # get model results
@@ -215,7 +225,9 @@ combined_results = pd.concat(
         wiki_srat_rates,
         wiki_source_loads_results,
     ]
-)[["Source", "Sediment", "TotalN", "TotalP", "comid", "huc_run","huc_run_level"]].copy()
+)[
+    ["Source", "Sediment", "TotalN", "TotalP", "comid", "huc_run", "huc_run_level"]
+].copy()
 combined_results["huc_run"] = np.where(
     combined_results["huc_run_level"] == 10,
     combined_results["huc_run"].apply(lambda x: f"{x:010d}"),
@@ -250,35 +262,51 @@ combined_w.columns = [" ".join(col).strip() for col in combined_w.columns.values
 
 # combine all of the shapes with the model data
 model_and_shapes = geo_df.merge(combined_w, on=["geom_id"])
-
-#%%
-# cross check for whether HUC's are really in the DRB interest region
-hucs_from_Mike = pd.read_csv(save_path + "huc12_list_drwipolassess.csv")
+drb = model_and_shapes.loc[model_and_shapes["in_drb"]].copy()
 
 
 #%%
 # test plot
-def callback(x_range, y_range):
-    cvs = ds.Canvas(plot_width=650, plot_height=400, x_range=x_range, y_range=y_range)
-    agg = cvs.polygons(
-        model_and_shapes.loc[model_and_shapes["geom_type"] == "catchment"],
-        geometry="geometry",
-        agg=ds.mean("TotalP Developed Land Uses"),
-    )
-    return hv.Image(agg).opts(cmap="viridis").opts(width=650, height=400)
+# from https://github.com/holoviz/spatialpandas/blob/master/examples/Overview.ipynb
+# Visualizing geometry arrays interactively with Datashader and HoloViews
+# def callback(x_range, y_range):
+#     cvs = ds.Canvas(plot_width=650, plot_height=400, x_range=x_range, y_range=y_range)
+#     agg = cvs.polygons(
+#         drb.loc[drb["geom_type"] == "catchment"],
+#         geometry="geometry",
+#         agg=ds.mean("TotalP Developed Land Uses"),
+#     )
+#     return hv.Image(agg).opts(cmap="viridis").opts(width=650, height=400)
 
 
-hv.DynamicMap(callback, streams=[hv.streams.RangeXY()])
+# hv.DynamicMap(callback, streams=[hv.streams.RangeXY()])
 
 
 # %%
-tiles = hv.element.tiles.OSM().opts(
-    min_height=500, responsive=True, xaxis=None, yaxis=None)
-polys = hv.Polygons(model_and_shapes, vdims='TotalP Developed Land Uses')
+tooltips = [("ID", "@geom_id"), ("Name", "@name")]
 
-shaded = datashade(polys, aggregator=ds.mean('TotalP Developed Land Uses'))
+hover_tool = HoverTool(tooltips=tooltips)
+tiles = gv.tile_sources.OSM().opts(
+    min_height=500, responsive=True, xaxis=None, yaxis=None
+)
+polys = hv.Polygons(
+    drb.loc[drb["geom_type"] == "catchment"],
+    vdims="TotalP Developed Land Uses",
+).opts(show_frame=True)
+# borders = hv.Polygons(
+#     drb.loc[drb["geom_type"] == "HUC10"],
+# ).opts(fill_alpha=0)
+huc12_borders = hv.Path(
+    drb.loc[drb["geom_type"] == "HUC12"],
+).opts(line_color='black',line_width=1)
+huc10_borders = hv.Path(
+    drb.loc[drb["geom_type"] == "HUC10"],
+).opts(line_color='black',line_width=2)
 
-hover = inspect_polygons(shaded).opts(fill_color='red', tools=['hover'])
+shaded_polys = datashade(polys, aggregator=ds.mean("TotalP Developed Land Uses"),cmap='RdYlGn_r',cnorm='log')
 
-tiles * shaded * hover
+hover = inspect_polygons(shaded_polys).opts(tools=[hover_tool])
+
+tiles * shaded_polys * hover * huc12_borders*huc10_borders
+
 # %%
