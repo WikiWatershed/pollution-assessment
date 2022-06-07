@@ -32,6 +32,7 @@ from mmw_secrets import (
     srgd_mmw_pass,
     save_path,
     csv_path,
+    geojson_path,
     json_dump_path,
     csv_extension,
 )
@@ -53,7 +54,7 @@ weather_layer = "NASA_NLDAS_2000_2019"
 # I got the list from https://hydro.nationalmap.gov/arcgis/rest/services/wbd/MapServer/6/query?f=json&where=((UPPER(huc12)%20LIKE%20%27020401%25%27)%20OR%20(UPPER(huc12)%20LIKE%20%27020402%25%27)%20OR%20(UPPER(huc12)%20LIKE%20%27020403%25%27))&spatialRel=esriSpatialRelIntersects&outFields=OBJECTID%2Csourcefeatureid%2Cloaddate%2Careaacres%2Careasqkm%2Cstates%2Chuc12%2Cname%2Chutype%2Chumod%2Ctohuc%2Cnoncontributingareaacres%2Cnoncontributingareasqkm&orderByFields=OBJECTID%20ASC&outSR=102100
 
 huc12_shapes = gpd.read_file(
-    "HUC12s in 020401, 020402, 020403 v2.json",
+    geojson_path + "WBD_HUC12s.json",
 )
 huc12_shapes = huc12_shapes.set_crs("EPSG:3857").to_crs("EPSG:4326")
 huc12_shapes["huc_level"] = 12
@@ -68,7 +69,7 @@ huc12_shapes = (
 # I got the list from https://hydro.nationalmap.gov/arcgis/rest/services/wbd/MapServer/5/query?f=json&where=((UPPER(huc10) LIKE '020401%') OR (UPPER(huc10) LIKE '020402%') OR (UPPER(huc10) LIKE '020403%'))&spatialRel=esriSpatialRelIntersects&outFields=OBJECTID,Shape,sourcedatadesc,sourceoriginator,sourcefeatureid,loaddate,areaacres,areasqkm,states,huc10,name,hutype,humod,referencegnis_ids&orderByFields=OBJECTID ASC&outSR=102100
 
 huc10_shapes = gpd.read_file(
-    "WBD_HUC10s.json",
+    geojson_path + "WBD_HUC10s.json",
 )
 huc10_shapes = huc10_shapes.set_crs("EPSG:3857").to_crs("EPSG:4326")
 huc10_shapes["huc_level"] = 10
