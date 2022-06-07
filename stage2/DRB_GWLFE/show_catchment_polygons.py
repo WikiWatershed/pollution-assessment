@@ -3,6 +3,7 @@ from mailbox import linesep
 import numpy as np
 import pandas as pd
 import geopandas as gpd
+from pyrsistent import v
 import spatialpandas as spd
 import spatialpandas.geometry
 from spatialpandas import GeoSeries, GeoDataFrame
@@ -16,7 +17,12 @@ import datashader.transfer_functions as tf
 
 import holoviews as hv
 from holoviews import dim, opts, Options
-from holoviews.operation.datashader import rasterize, datashade, inspect_polygons
+from holoviews.operation.datashader import (
+    rasterize,
+    datashade,
+    inspect_polygons,
+    spread,
+)
 
 import geoviews as gv
 import geoviews.tile_sources as gvts
@@ -32,6 +38,7 @@ gv.extension("bokeh")
 
 from mmw_secrets import (
     save_path,
+    geojson_path,
     csv_path,
 )
 
@@ -122,6 +129,29 @@ opts.defaults(
     fontsize=font_sizes,
 )
 
+#%%
+# Threshold/Target Values for Acceptable Water Quality
+
+# Catchment Target Load Rate (kg/ha)
+tn_loadrate_target = 17.07  # Includes Organic N
+tp_loadrate_target = 0.31
+tss_loadrate_target = 923.80
+
+# Reach Target Concenctration (mg/l)
+tn_conc_target = 4.73  # Includes Organic N
+tp_conc_target = 0.09
+tss_conc_target = 237.30
+
+# Minimum Values, to avoid negative numbers and errors with LOG normalized plots
+# = Targets / 100
+
+# Create a dictionary of these Targets, to use later for iterating functions
+
+targets = {
+    "tn": {"loadrate_target": tn_loadrate_target, "conc_target": tn_conc_target},
+    "tp": {"loadrate_target": tp_loadrate_target, "conc_target": tp_conc_target},
+    "tss": {"loadrate_target": tss_loadrate_target, "conc_target": tss_conc_target},
+}
 
 #%%
 # get HUC shapes
@@ -130,7 +160,7 @@ opts.defaults(
 # I got the list from https://hydro.nationalmap.gov/arcgis/rest/services/wbd/MapServer/6/query?f=json&where=((UPPER(huc12)%20LIKE%20%27020401%25%27)%20OR%20(UPPER(huc12)%20LIKE%20%27020402%25%27)%20OR%20(UPPER(huc12)%20LIKE%20%27020403%25%27))&spatialRel=esriSpatialRelIntersects&outFields=OBJECTID%2Csourcefeatureid%2Cloaddate%2Careaacres%2Careasqkm%2Cstates%2Chuc12%2Cname%2Chutype%2Chumod%2Ctohuc%2Cnoncontributingareaacres%2Cnoncontributingareasqkm&orderByFields=OBJECTID%20ASC&outSR=102100
 print("Reading the HUC-12 names and shapes")
 huc12_shapes = gpd.read_file(
-    save_path + "HUC12s in 020401, 020402, 020403 v2.json",
+    geojson_path + "WBD_HUC12s.json",
 )
 huc12_shapes = huc12_shapes.set_crs("EPSG:3857")
 huc12_shapes2 = (
@@ -144,7 +174,7 @@ huc12_shapes2["huc_level"] = "HUC12"
 # I got the list from https://hydro.nationalmap.gov/arcgis/rest/services/wbd/MapServer/5/query?f=json&where=((UPPER(huc10) LIKE '020401%') OR (UPPER(huc10) LIKE '020402%') OR (UPPER(huc10) LIKE '020403%'))&spatialRel=esriSpatialRelIntersects&outFields=OBJECTID,Shape,sourcedatadesc,sourceoriginator,sourcefeatureid,loaddate,areaacres,areasqkm,states,huc10,name,hutype,humod,referencegnis_ids&orderByFields=OBJECTID ASC&outSR=102100
 print("Reading the HUC-10 names and shapes")
 huc10_shapes = gpd.read_file(
-    save_path + "WBD_HUC10s.json",
+    geojson_path + "WBD_HUC10s.json",
 )
 huc10_shapes = huc10_shapes.set_crs("EPSG:3857")
 huc10_shapes["huc_level"] = 10
@@ -159,7 +189,7 @@ huc10_shapes2["huc_level"] = "HUC10"
 # get NHD Catchment shapes
 print("Reading the NHD Catchment shapes")
 comid_geom_r = gpd.read_file(
-    csv_path + "nhd_catchment_shapes.geojson", driver="GeoJSON"
+    csv_path + "geojson\\nhd_catchment_shapes.geojson", driver="GeoJSON"
 ).drop(columns="HUC10")
 comid_geom_r["huc"] = comid_geom_r["HUC12"].apply(lambda x: f"{x:012d}")
 comid_geom_r = comid_geom_r.to_crs("EPSG:3857")
@@ -193,6 +223,17 @@ drb_huc10s = hucs_from_Mike["huc12"].str.slice(0, 10).unique()
 drb_huc12s = hucs_from_Mike["huc12"].unique()
 # geo_df["in_drb"] = geo_df["huc"].isin(np.concatenate((drb_huc10s, drb_huc12s), axis=0))
 geo_df["in_drb"] = geo_df["huc"].str.slice(0, 10).isin(drb_huc10s)
+
+#%%
+# get NHD Catchment blue lines
+print("Reading the NHD Catchment blue lines")
+comid_lines = gpd.read_file(
+    csv_path + "geojson\\nhd_catchment_blue_lines.geojson", driver="GeoJSON"
+).drop(columns="HUC10")
+comid_lines["huc"] = comid_lines["HUC12"].apply(lambda x: f"{x:012d}")
+comid_lines = comid_lines.to_crs("EPSG:3857")
+comid_lines["in_drb"] = comid_lines["huc"].str.slice(0, 10).isin(drb_huc10s)
+comid_lines_gdf = GeoDataFrame(comid_lines)
 
 #%%
 # get model results
@@ -262,7 +303,17 @@ combined_w.columns = [" ".join(col).strip() for col in combined_w.columns.values
 
 # combine all of the shapes with the model data
 model_and_shapes = geo_df.merge(combined_w, on=["geom_id"])
-drb = model_and_shapes.loc[model_and_shapes["in_drb"]].copy()
+drb_shapes = model_and_shapes.loc[model_and_shapes["in_drb"]].copy()
+
+#%%
+# get concentrations to go with stream lines
+# Attenuated subbasins, started using the whole results from ModelMW
+# and then run directly on WikiSRAT microservice
+wiki_srat_conc = pd.read_csv(csv_path + "wikisrat_catchment_concs.csv")
+model_lines = comid_lines_gdf[["comid", "geometry", "in_drb"]].merge(
+    wiki_srat_conc[["Sediment", "TotalN", "TotalP", "comid"]], on="comid"
+)
+drb_lines = model_lines.loc[model_lines["in_drb"]].copy()
 
 
 #%%
@@ -290,23 +341,46 @@ tiles = gv.tile_sources.OSM().opts(
     min_height=500, responsive=True, xaxis=None, yaxis=None
 )
 polys = hv.Polygons(
-    drb.loc[drb["geom_type"] == "catchment"],
+    drb_shapes.loc[drb_shapes["geom_type"] == "catchment"],
     vdims="TotalP Developed Land Uses",
 ).opts(show_frame=True)
 # borders = hv.Polygons(
 #     drb.loc[drb["geom_type"] == "HUC10"],
 # ).opts(fill_alpha=0)
 huc12_borders = hv.Path(
-    drb.loc[drb["geom_type"] == "HUC12"],
-).opts(line_color='black',line_width=1)
+    drb_shapes.loc[drb_shapes["geom_type"] == "HUC12"],
+).opts(line_color="black", line_width=0.75)
 huc10_borders = hv.Path(
-    drb.loc[drb["geom_type"] == "HUC10"],
-).opts(line_color='black',line_width=2)
+    drb_shapes.loc[drb_shapes["geom_type"] == "HUC10"],
+).opts(line_color="black", line_width=2)
+blue_lines = hv.Path(comid_lines.loc[comid_lines["in_drb"]]).opts(
+    line_color="blue", line_width=1
+)
 
-shaded_polys = datashade(polys, aggregator=ds.mean("TotalP Developed Land Uses"),cmap='RdYlGn_r',cnorm='log')
+shaded_polys = datashade(
+    polys,
+    aggregator=ds.mean("TotalP Developed Land Uses"),
+    cmap="RdYlGn_r",
+    cnorm="log",
+)
 
 hover = inspect_polygons(shaded_polys).opts(tools=[hover_tool])
 
-tiles * shaded_polys * hover * huc12_borders*huc10_borders
+tiles * shaded_polys * hover * huc12_borders * huc10_borders * blue_lines
 
+# %%
+color_lines = hv.Path(drb_lines, vdims="TotalP")
+shaded_lines = spread(
+    datashade(
+        color_lines,
+        aggregator=ds.mean("TotalP"),
+        cmap="RdYlGn_r",
+        # cnorm="log",
+    )
+)
+tiles * shaded_lines
+tiles * shaded_polys * hover * huc12_borders * huc10_borders * shaded_lines
+
+# %%
+tiles * shaded_lines
 # %%
