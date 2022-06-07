@@ -157,6 +157,8 @@ stage2/DRB_GWLFE/drb_mmw_results.zip
 stage2/DRB_GWLFE/mmw_walk.py
 stage2/DRB_GWLFE/run_srat_drb_huc10.py
 stage2/DRB_GWLFE/run_srat_drb_huc12.py
-stage2/DRB_GWLFE/mmw_results/nhd_catchment_blue_lines.geojson
-stage2/DRB_GWLFE/mmw_results/nhd_catchment_details.json
-stage2/DRB_GWLFE/mmw_results/nhd_catchment_shapes.geojson
+stage2/DRB_GWLFE/geojson/nhd_catchment_blue_lines.geojson
+stage2/DRB_GWLFE/geojson/nhd_catchment_details.json
+stage2/DRB_GWLFE/geojson/nhd_catchment_shapes.geojson
+stage2/DRB_GWLFE/geojson/WBD_HUC10s.json
+stage2/DRB_GWLFE/geojson/WBD_HUC12s.json

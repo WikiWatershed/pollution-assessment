@@ -45,7 +45,7 @@ for name, chunk in catchments.groupby(by=["grouper"]):
 # %%
 # save the catchment details
 with open(
-    csv_path + "nhd_catchment_details.json",
+    csv_path + "geojson\\nhd_catchment_details.json",
     "w",
 ) as fp:
     json.dump(all_catchment_details, fp, indent=2)
@@ -76,7 +76,7 @@ gdf_shapes = gpd.GeoDataFrame(
     geometry="nhd_catchment_geometry",
 ).set_crs("EPSG:4326")
 gdf_shapes.to_file(
-    csv_path + "nhd_catchment_shapes.geojson",
+    csv_path + "geojson\\nhd_catchment_shapes.geojson",
     driver="GeoJSON",
 )
 
@@ -85,7 +85,7 @@ gdf_lines = gpd.GeoDataFrame(
     geometry="stream_geometry",
 ).set_crs("EPSG:4326")
 gdf_lines.to_file(
-    csv_path + "nhd_catchment_blue_lines.geojson",
+    csv_path + "geojson\\nhd_catchment_blue_lines.geojson",
     driver="GeoJSON",
 )
 
