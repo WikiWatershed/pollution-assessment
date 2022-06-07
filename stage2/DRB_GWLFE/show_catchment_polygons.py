@@ -217,7 +217,7 @@ geo_df["geom_id"] = geo_df["comid"].fillna(geo_df["huc"])
 
 #%%
 # cross check for whether HUC's are really in the DRB interest region
-hucs_from_Mike = pd.read_csv(save_path + "huc12_list_drwipolassess.csv")
+hucs_from_Mike = pd.read_csv(geojson_path + "huc12_list_drwipolassess.csv")
 hucs_from_Mike["huc12"] = hucs_from_Mike["huc12"].apply(lambda x: f"{x:012d}")
 drb_huc10s = hucs_from_Mike["huc12"].str.slice(0, 10).unique()
 drb_huc12s = hucs_from_Mike["huc12"].unique()

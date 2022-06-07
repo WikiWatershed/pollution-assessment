@@ -81,7 +81,7 @@ huc10_shapes = (
 
 #%%
 # Read location data - list from Michael Campagna
-hucs_from_Mike = pd.read_csv(save_path + "huc12_list_drwipolassess.csv").rename(
+hucs_from_Mike = pd.read_csv(geojson_path + "huc12_list_drwipolassess.csv").rename(
     columns={"huc12": "huc"}
 )
 huc12_shapes["huc_level"] = 12
