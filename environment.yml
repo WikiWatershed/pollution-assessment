@@ -12,7 +12,6 @@ dependencies:
     - geojson
     - openpyxl # read/write Excel 2010+ files (.xlsx & .xlsm)
 
-
     # Database connections, to run first half of stage1/WikiSRAT_Demo.ipynb
     # - psycopg2  
     # - sqlalchemy

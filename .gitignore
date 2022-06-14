@@ -134,6 +134,7 @@ cache
 
 db_config.txt
 db_config.json
+stage2/FieldDoc_API/config.json
 
 *.jupyterlab-workspace
 .~*
