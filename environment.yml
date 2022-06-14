@@ -1,32 +1,34 @@
-name: WikiSRAT
+name: drwi_pa
 channels:
     - conda-forge
     - defaults
 dependencies:
-    - python =3.8.*  # Py v3.8.10 was the final regular Py 3.8 release (May 3, 2021). https://www.python.org/downloads/release/python-3810/
-    - pandas >=1.3
-    - psycopg2 >=2.9.1
-
+    - python =3.9.*  # Py v3.9 has been the default in Anaconda releases since 2021.05
+    
+    # PyData
+    - pandas >=1.4
     - geopandas
-    - sqlalchemy
-    - pyarrow
-    - pynhd
+    - pyarrow  # for saving to Parquet from GeoPandas
     - geojson
-    - openpyxl
+    - openpyxl # read/write Excel 2010+ files (.xlsx & .xlsm)
 
+    # Database connections, to run first half of stage1/WikiSRAT_Demo.ipynb
+    # - psycopg2  
+    # - sqlalchemy
 
-    # Interactivity & Visualization via Jupyter Notebooks
-    - jupyterlab >=3.0.12
-    - nb_conda  # Conda environment & package access extension from within Jupyter
-    - ipywidgets  # Required for HoloViz interactivity
-    - matplotlib
+    # Visualization
+    - matplotlib >=3.5
     - matplotlib-scalebar
-    - plotly
-    - contextily
+    - hvplot  # hvPlot installs most HoloViz libs, https://holoviz.org
+    - geoviews
+    - contextily  # retrieve tile maps from the internet. Installs RasterIO.
 
-    # Optional extension dependencies for JupyterLab
+    # Interactivity via Jupyter Notebooks
+    - jupyterlab >=3.4
     - nodejs  # required for many extensions
     - ipympl  # jupyter-matplotlib, https://github.com/matplotlib/ipympl
+    - ipywidgets  # Required for HoloViz interactivity
+    # - nb_conda  # Conda environment & package access extension from within Jupyter
 
     # Dev tools
     # - python-language-server
@@ -41,4 +43,4 @@ dependencies:
     # https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html#using-pip-in-an-environment
     - pip
     - pip:
-        - lckr-jupyterlab-variableinspector  # https://github.com/lckr/jupyterlab-variableInspector
+        # - lckr-jupyterlab-variableinspector  # https://github.com/lckr/jupyterlab-variableInspector
