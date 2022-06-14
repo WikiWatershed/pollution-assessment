@@ -164,3 +164,8 @@ stage2/DRB_GWLFE/geojson/nhd_catchment_shapes.geojson
 stage2/DRB_GWLFE/geojson/WBD_HUC10s.json
 stage2/DRB_GWLFE/geojson/WBD_HUC12s.json
 stage2/DRB_GWLFE/archive/
+stage2/DRB_GWLFE/mmw_results_archive/
+stage2/DRB_GWLFE/mmw_results/wikisrat_catchment_loading_rates.csv
+stage2/DRB_GWLFE/mmw_results/wikisrat_catchment_sources.csv
+stage2/DRB_GWLFE/mmw_results/wikisrat_huc_sources.csv
+stage2/DRB_GWLFE/mmw_results/wikisrat_reach_concentrations.csv
