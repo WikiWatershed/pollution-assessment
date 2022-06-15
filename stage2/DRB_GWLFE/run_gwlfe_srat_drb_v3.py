@@ -444,7 +444,7 @@ for idx, huc_row in hucs_to_run.iterrows():
         ),
         "SummaryLoads",
     )
-    if gwlfe_sb_result is None:
+    if gwlfe_sb_result is None and closest_stations is not None:
         used_weather_layer, gwlfe_mods = get_weather_modifications(
             huc_row, mapshed_sb_job_id, mapshed_payload["layer_overrides"]
         )
@@ -503,7 +503,7 @@ for idx, huc_row in hucs_to_run.iterrows():
                 huc12,
                 12,
             )
-            catch_result = {
+            catch_results = {
                 "catchment_loading_rates": [],
                 "reach_concentrations": [],
                 "catchment_sources": [],
@@ -512,7 +512,8 @@ for idx, huc_row in hucs_to_run.iterrows():
                 catch_sources = pd.DataFrame(
                     gwlfe_sb_result["HUC12s"][huc12]["Catchments"][catchment]["Loads"]
                 )
-                catch_result["catchment_sources"].append(catch_sources.copy())
+                catch_sources["comid"] = catchment
+                catch_results["catchment_sources"].append(catch_sources.copy())
 
                 reach_concentrations = pd.DataFrame(
                     gwlfe_sb_result["HUC12s"][huc12]["Catchments"][catchment][
@@ -520,7 +521,8 @@ for idx, huc_row in hucs_to_run.iterrows():
                     ],
                     index=pd.Index([catchment]),
                 )
-                catch_result["reach_concentrations"].append(reach_concentrations.copy())
+                reach_concentrations["comid"] = catchment
+                catch_results["reach_concentrations"].append(reach_concentrations.copy())
 
                 catch_loading_rates = pd.DataFrame(
                     gwlfe_sb_result["HUC12s"][huc12]["Catchments"][catchment][
@@ -528,18 +530,18 @@ for idx, huc_row in hucs_to_run.iterrows():
                     ],
                     index=pd.Index([catchment]),
                 )
-                catch_result["catchment_loading_rates"].append(
+                catch_loading_rates["comid"] = catchment
+                catch_results["catchment_loading_rates"].append(
                     catch_loading_rates.copy()
                 )
 
-            for catch_key, catch_list in catch_result.items():
+            for catch_res_key, catch_list in catch_results.items():
                 if len(catch_list) > 0:
                     all_catch_frame = pd.concat(catch_list)
-                    all_catch_frame["comid"] = catchment
                     all_catch_frame["gwlfe_endpoint"] = "subbasin"
                     all_catch_frame["huc"] = huc12
                     all_catch_frame["huc_level"] = 12
-                    huc_result[catch_key] = all_catch_frame.copy()
+                    huc_result[catch_res_key] = all_catch_frame.copy()
 
     if wikisrat_result is not None:
         for huc12, huc12_wikisrat in wikisrat_result["huc12s"].items():
@@ -548,31 +550,35 @@ for idx, huc_row in hucs_to_run.iterrows():
             huc_result["wikisrat_huc_sources"] = (
                 format_wikisrat_return(h12_cpy, "huc12")["sources"].copy().reset_index()
             )
-            catch_result = {
+            catch_results = {
                 "wikisrat_catchment_loading_rates": [],
                 "wikisrat_reach_concentrations": [],
                 "wikisrat_catchment_sources": [],
             }
             for catchment, catch_sources in h12_catches.items():
                 catch_loads = format_wikisrat_return(catch_sources, huc=huc12)
-                catch_result["wikisrat_catchment_loading_rates"].append(
+                catch_results["wikisrat_catchment_loading_rates"].append(
                     catch_loads["totals"]
                     .loc[catch_loads["totals"].index == "TotalLoadingRates"]
                     .copy()
                     .reset_index()
                 )
-                catch_result["wikisrat_reach_concentrations"].append(
+                catch_results["wikisrat_reach_concentrations"].append(
                     catch_loads["totals"]
                     .loc[catch_loads["totals"].index == "LoadingRateConcentrations"]
                     .copy()
                     .reset_index()
                 )
-                catch_result["wikisrat_catchment_sources"].append(
+                catch_results["wikisrat_catchment_sources"].append(
                     catch_loads["sources"].copy().reset_index()
                 )
-            for catch_res_key, catch_res in catch_result.items():
-                if catch_res != []:
-                    huc_result[catch_res_key] = pd.concat(catch_res, ignore_index=True)
+            for catch_res_key, catch_list in catch_results.items():
+                if len(catch_list) > 0:
+                    all_catch_frame =  pd.concat(catch_list, ignore_index=True)
+                    all_catch_frame["gwlfe_endpoint"] = "wikiSRAT"
+                    all_catch_frame["huc"] = huc12
+                    all_catch_frame["huc_level"] = 12
+                    huc_result[catch_res_key] = all_catch_frame.copy()
 
     for result_key, result_frame in huc_result.items():
         if result_frame is not None:
