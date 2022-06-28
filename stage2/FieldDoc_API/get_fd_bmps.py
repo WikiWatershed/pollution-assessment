@@ -4,6 +4,11 @@ import sys
 import pandas as pd
 from geopandas import GeoDataFrame
 from shapely.geometry import Polygon
+from shapely.geometry import Point
+from shapely.geometry import LineString
+from shapely.geometry import MultiPoint
+from shapely.geometry import MultiLineString
+from shapely.geometry import MultiPolygon
 
 
 class drwiBmps:
@@ -44,8 +49,11 @@ class drwiBmps:
         return self._r_practice_ids
 
     def get_bmp_data(self):
+        # c = 0
         bmp_data = []
         for id in self._r_practice_ids:
+            # if c == 10:
+                # break
             single_bmp = {}
             self._url = ''.join(('https://api.fielddoc.org/v1/practices/', str(id), '?access_token=', self._api_token))
             self._r_bmp = requests.get(self._url, headers=self._headers, allow_redirects=True, verify=True)
@@ -74,16 +82,60 @@ class drwiBmps:
                 # print(_return['id'])
                 # print(_return['practice_type']['name'])
                 # print(_return)
+            # c += 1
 
-        parsed_data = [[item['practice_name'], item['practice_id'], item['program_name'],
-                        item['program_id'], item['organization'], item['description'],
-                        item['practice_type'], item['created_at'], item['modified_at'],
-                        item['tn'], item['tp'], item['tss'],
-                        Polygon(item['geom']['coordinates'][0])] for item in bmp_data]
+        parsed_data = []
+        for item in bmp_data:
+            try:
+                if item['geom']['type'] == 'Polygon':
+                    parsed_data.append([item['practice_name'], item['practice_id'], item['program_name'],
+                                item['program_id'], item['organization'], item['description'],
+                                item['practice_type'], item['created_at'], item['modified_at'],
+                                item['tn'], item['tp'], item['tss'],
+                                Polygon(item['geom']['coordinates'][0])])
+                elif item['geom']['type'] == 'MultiPolygon':
+                    parsed_data.append([item['practice_name'], item['practice_id'], item['program_name'],
+                                item['program_id'], item['organization'], item['description'],
+                                item['practice_type'], item['created_at'], item['modified_at'],
+                                item['tn'], item['tp'], item['tss'],
+                                MultiPolygon(item['geom']['coordinates'][0])])
+                elif item['geom']['type'] == 'Point':
+                    parsed_data.append([item['practice_name'], item['practice_id'], item['program_name'],
+                                        item['program_id'], item['organization'], item['description'],
+                                        item['practice_type'], item['created_at'], item['modified_at'],
+                                        item['tn'], item['tp'], item['tss'],
+                                        Point(item['geom']['coordinates'][0])])
+                elif item['geom']['type'] == 'MultiPoint':
+                    parsed_data.append([item['practice_name'], item['practice_id'], item['program_name'],
+                                        item['program_id'], item['organization'], item['description'],
+                                        item['practice_type'], item['created_at'], item['modified_at'],
+                                        item['tn'], item['tp'], item['tss'],
+                                        MultiPoint(item['geom']['coordinates'][0])])
+                elif item['geom']['type'] == 'LineString':
+                    parsed_data.append([item['practice_name'], item['practice_id'], item['program_name'],
+                                        item['program_id'], item['organization'], item['description'],
+                                        item['practice_type'], item['created_at'], item['modified_at'],
+                                        item['tn'], item['tp'], item['tss'],
+                                        LineString(item['geom']['coordinates'][0])])
+                elif item['geom']['type'] == 'MultiLineString':
+                    parsed_data.append([item['practice_name'], item['practice_id'], item['program_name'],
+                                        item['program_id'], item['organization'], item['description'],
+                                        item['practice_type'], item['created_at'], item['modified_at'],
+                                        item['tn'], item['tp'], item['tss'],
+                                        MultiLineString(item['geom']['coordinates'][0])])
+                else:
+                    print(item['practice_id'])
+                    print(item['practice_name'])
+                    print(item['geom']['type'])
+            except:
+                print('Failed to export practice:')
+                print(item['practice_id'])
+                print(item['practice_name'])
+                print(item['geom']['type'])
 
-        bmp_df = pd.DataFrame(data=parsed_data, columns=['practice_name', 'practice_id', 'program_name', 'program_id',
+        bmp_df = GeoDataFrame(data=parsed_data, columns=['practice_name', 'practice_id', 'program_name', 'program_id',
                                                   'organization', 'description', 'practice_type', 'created_at',
-                                                  'modified_at', 'tn', 'tp', 'tss', 'geom'])
+                                                  'modified_at', 'tn', 'tp', 'tss', 'geometry'])
         return bmp_df
 
 
@@ -96,7 +148,10 @@ if __name__ == '__main__':
         print('Default: {}'.format(proj_type))
     config_file = json.load(open('config.json'))
     fielddoc = drwiBmps(_config_file=config_file, _rest_prot=proj_type)
+    print('Getting Practice IDs')
     practices = fielddoc.get_practice_ids()
     print(len(practices))
+    print('Getting Load Reduction Information')
     bmps = fielddoc.get_bmp_data()
     print(bmps)
+    bmps.to_file("data_output/bmp_package.gpkg", layer='bmps', driver="GPKG")
