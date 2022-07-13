@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 from matplotlib_scalebar.scalebar import ScaleBar
 import geopandas as gpd
-import plotly.express as px
+# import plotly.express as px
 from shapely.geometry import Polygon
 import contextily as ctx
 
