@@ -47,9 +47,9 @@ protection_df.sort_index(inplace=True)
 # OUTPUT TO GEOSPATIAL FORMAT
 # TODO: CANNOT OUTPUT A DATE COLUMN
 restoration_df_temp = restoration_df.drop(columns=['created_at', 'modified_at'])
-restoration_df_temp.to_file('data_output/SHP/restoration_df.gpkg', driver='GPKG')
+restoration_df_temp.to_file('private/SHP/restoration_df.gpkg', driver='GPKG')
 protection_df_temp = protection_df.drop(columns=['created_at', 'modified_at'])
-protection_df_temp.to_file('data_output/SHP/protection_df.gpkg', driver='GPKG')
+protection_df_temp.to_file('private/SHP/protection_df.gpkg', driver='GPKG')
 
 # Amend data types that aren't pulling from the database
 restoration_df.huc12 = restoration_df.huc12.astype('category')
@@ -76,7 +76,7 @@ restoration_df.head(3)
 protection_df.head(3)
 
 # Save the data to parquet files
-data_folder = Path('data_output/')
+data_folder = Path('private/')
 restoration_df.to_parquet(data_folder /'restoration_df.parquet',compression='gzip')
 protection_df.to_parquet(data_folder /'protection_df.parquet',compression='gzip')
 
