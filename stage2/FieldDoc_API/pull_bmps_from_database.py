@@ -23,29 +23,17 @@ db_connection_url = "postgresql://{}:{}@{}:{}/{}".format(PG_CONFIG['user'], PG_C
                                                          PG_CONFIG['database'])
 con = create_engine(db_connection_url)
 
-# cur = PG_Connection.cursor()
-# cur.execute("select comid,huc12,practice_name,practice_id,program_name,program_id,organization,description,"
-#             "practice_type,created_at,modified_at,bmp_size,bmp_size_unit,ST_AsGeoJson(geom) as geom "
-#             "from datapolassess.fd_api_protection_comid order by practice_id, comid;")
-# restoration_data = cur.fetchall()
-
 restoration_select = "select comid,huc12,practice_name,practice_id,program_name,program_id,organization,description," \
-                     "practice_type,created_at,modified_at,bmp_size,bmp_size_unit,geom from " \
-                     "datapolassess.fd_api_protection_comid order by practice_id, comid;"
+            "practice_type,created_at,modified_at,tn,tp,tss,bmp_size,bmp_size_unit,geom " \
+            "from datapolassess.fd_api_restoration_comid order by practice_id, comid;"
 restoration_df = gpd.read_postgis(restoration_select, con)
 restoration_cols = ['comid', 'huc12', 'practice_name', 'practice_id','program_name','program_id','organization',
                     'description','practice_type','created_at','modified_at','bmp_size','bmp_size_unit','geometry']
 restoration_df.set_index(['comid', 'practice_id'], inplace=True)
 
-# cur = PG_Connection.cursor()
-# cur.execute("select comid,huc12,practice_name,practice_id,program_name,program_id,organization,description,"
-#             "practice_type,created_at,modified_at,tn,tp,tss,bmp_size,bmp_size_unit,ST_AsGeoJson(geom) as geom "
-#             "from datapolassess.fd_api_restoration_comid order by practice_id, comid;")
-# protection_data = cur.fetchall()
-
 protection_select = "select comid,huc12,practice_name,practice_id,program_name,program_id,organization,description," \
-            "practice_type,created_at,modified_at,tn,tp,tss,bmp_size,bmp_size_unit,geom " \
-            "from datapolassess.fd_api_restoration_comid order by practice_id, comid;"
+                     "practice_type,created_at,modified_at,bmp_size,bmp_size_unit,geom from " \
+                     "datapolassess.fd_api_protection_comid order by practice_id, comid;"
 protection_df = gpd.read_postgis(protection_select, con)
 protection_cols = ['comid', 'huc12', 'practice_name', 'practice_id', 'program_name', 'program_id', 'organization',
                    'description', 'practice_type', 'created_at', 'modified_at', 'tn', 'tp', 'tss', 'bmp_size',
@@ -55,6 +43,13 @@ protection_df.set_index(['comid', 'practice_id'], inplace=True)
 # Create the primary key for the dataset
 restoration_df.sort_index(inplace=True)
 protection_df.sort_index(inplace=True)
+
+# OUTPUT TO GEOSPATIAL FORMAT
+# TODO: CANNOT OUTPUT A DATE COLUMN
+restoration_df_temp = restoration_df.drop(columns=['created_at', 'modified_at'])
+restoration_df_temp.to_file('data_output/SHP/restoration_df.gpkg', driver='GPKG')
+protection_df_temp = protection_df.drop(columns=['created_at', 'modified_at'])
+protection_df_temp.to_file('data_output/SHP/protection_df.gpkg', driver='GPKG')
 
 # Amend data types that aren't pulling from the database
 restoration_df.huc12 = restoration_df.huc12.astype('category')
@@ -84,6 +79,4 @@ protection_df.head(3)
 data_folder = Path('data_output/')
 restoration_df.to_parquet(data_folder /'restoration_df.parquet',compression='gzip')
 protection_df.to_parquet(data_folder /'protection_df.parquet',compression='gzip')
-
-
 
