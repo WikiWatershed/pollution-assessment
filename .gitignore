@@ -144,6 +144,9 @@ stage2/FieldDoc_API/config.json
 .vscode
 .history
 
+# IntelliJ IDE
+.idea
+
 # Ignore raw data files and figures
 data/FieldDocExports
 *.gpkg
@@ -153,7 +156,7 @@ stage2/DRB_GWLFE/mmw_results/json_results/*
 
 
 mmw_secrets.py
-.gitignore
+
 stage2/DRB_GWLFE/drb_mmw_results.zip
 stage2/DRB_GWLFE/mmw_walk.py
 stage2/DRB_GWLFE/run_srat_drb_huc10.py
