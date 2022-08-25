@@ -92,6 +92,11 @@ on st_intersects(st_transform(a.geom,32618), b.catchment)
 order by practice_id, b.comid
 ;
 
+UPDATE datapolassess.fd_api_protection SET GEOM = ST_MAKEVALID(GEOM);
+UPDATE datapolassess.fd_api_protection_comid SET GEOM = ST_MAKEVALID(GEOM);
+
+select * from datapolassess.fd_api_protection_comid where practice_id = 51769;
+
 ----------------
 --Restoration
 drop table if exists datapolassess.fd_api_restoration_comid;
