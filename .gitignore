@@ -175,3 +175,4 @@ stage2/DRB_GWLFE/mmw_results/wikisrat_reach_concentrations.csv
 stage2/private/
 pollution-assessment/stage2/FieldDoc_API/private
 stage2/Protected_Lands/mmw_results/json_results/*
+stage2/Restoration/json_results/*
