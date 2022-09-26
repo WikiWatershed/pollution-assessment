@@ -31,18 +31,38 @@ from mmw_secrets import (
     restoration_csv_path,
     geojson_path,
     csv_extension,
-    gwlfe_json_dump_path,restoration_save_path,
+    gwlfe_json_dump_path,
+    restoration_save_path,
     restoration_json_dump_path,
 )
+
 land_use_layer = "2019_2019"
 # ^^ NOTE:  This is the default, but I also specified it in the code below
 stream_layer = "nhdhr"
 # ^^ NOTE:  This is the default.  I did not specify a stream override.
 weather_layer = "NASA_NLDAS_2000_2019"
 used_attenuation = True
-used_restoration_sources = [
-    "Delaware River Restoration Fund",
-]
+funding_source_groups = {
+    "No restoration or protection": [],
+    "Direct WPF Restoration": [
+        "Delaware River Restoration Fund",
+    ],
+    "Direct and Indirect WPF Restoration": [
+        "Delaware River Restoration Fund",
+        "Delaware River Operational Fund",
+        "Delaware Watershed Conservation Fund",
+    ],
+    "All Restoration": [
+        "Delaware River Restoration Fund",
+        "Delaware River Operational Fund",
+        "Delaware Watershed Conservation Fund",
+        "PADEP",
+        "NJDEP",
+    ],
+    "Direct WPF Protection": [
+        "Delaware River Watershed Protection Fund - Forestland Capital Grants"
+    ],
+}
 
 #%%
 # Read location data - shapes from national map
@@ -117,8 +137,9 @@ SRAT_KEYS = {
     "Wetlands": "wetland",
     "Point Sources": "pointsource",
     "Septic Systems": "septics",
-    "TotalLoadingRates": "total",
-    "LoadingRateConcentrations": "conc",
+    "Total Local Load": "total",
+    "Reach Concentration": "conc",
+    "Point Source Derived Concentration": "conc_ptsource",
 }
 
 # taken from https://github.com/WikiWatershed/model-my-watershed/blob/31566fefbb91055c96a32a6279dac5598ba7fc10/src/mmw/apps/modeling/tasks.py#L72-L96
@@ -130,9 +151,10 @@ def format_for_srat(huc12_id, model_output, with_attenuation, restoration_source
         "tpload_tiledrain": 0,
         "tnload_tiledrain": 0,
         "tssload_tiledrain": 0,
-        "restoration_sources": restoration_sources,
-        "with_attenuation": with_attenuation,
     }
+    if restoration_sources != []:
+        formatted["restoration_sources"] = restoration_sources
+        formatted["with_attenuation"] = with_attenuation
 
     for load in model_output["Loads"]:
         source_key = SRAT_KEYS.get(load["Source"], None)
@@ -196,42 +218,66 @@ def format_wikisrat_return(
     loads = pd.DataFrame.from_dict(
         source_dict, orient="index", columns=["Value"]
     ).reset_index()
-    loads[["Nutrient", "Source"]] = loads["index"].str.split("_", expand=True)
-    loads["Nutrient"] = loads["Nutrient"].replace(
-        {
-            "tpload": "TotalP",
-            "tnload": "TotalN",
-            "tssload": "Sediment",
-            "tploadrate": "TotalP",
-            "tnloadrate": "TotalN",
-            "tssloadrate": "Sediment",
-        }
-    )
-    loads["Source"] = loads["Source"].replace(SRAT_KEYS.values(), SRAT_KEYS.keys())
-    total_keys = ["TotalLoadingRates", "LoadingRateConcentrations"]
-    totals = loads.loc[loads["Source"].isin(total_keys)]
-    # NOTE:  Individual land use sources are NOT valid when applying restorations, only the totals
-    sources = loads.loc[~loads["Source"].isin(total_keys)]
-    return_dict = {}
-    for key, frame in zip(["totals", "sources"], [totals, sources]):
+    # break intod sub-groups
+    maflowv = loads.loc[loads["index"] == "maflowv"].copy()
+    conc_ptsource = loads.loc[loads["index"].str.contains("conc_ptsource")].copy()
+    reach_conc = loads.loc[loads["index"].str.contains("loadrate_conc")].copy()
+    total_local_load = loads.loc[loads["index"].str.contains("loadrate_total")].copy()
+    local_loads_by_source = loads.loc[
+        ~(loads["index"] == "maflowv")
+        & ~(
+            loads["index"].str.contains("conc_ptsource")
+            & ~(loads["index"].str.contains("loadrate_conc"))
+            & ~(loads["index"].str.contains("loadrate_total"))
+        )
+    ].copy()
+
+    return_dict = {"maflowv": maflowv.drop(columns="index")}
+    for key, frame in zip(
+        ["conc_ptsource", "reach_conc", "total_local_load", "local_loads_by_source"],
+        [conc_ptsource, reach_conc, total_local_load, local_loads_by_source],
+    ):
+        frame[["Nutrient", "Source"]] = frame["index"].str.split("_", expand=True, n=1)
+        frame["Nutrient"] = frame["Nutrient"].replace(
+            {
+                "tpload": "TotalP",
+                "tnload": "TotalN",
+                "tssload": "Sediment",
+                "tploadrate": "TotalP",
+                "tnloadrate": "TotalN",
+                "tssloadrate": "Sediment",
+                "tp": "TotalP",
+                "tn": "TotalN",
+                "tss": "Sediment",
+            }
+        )
+        frame["Source"] = frame["Source"].replace(SRAT_KEYS.values(), SRAT_KEYS.keys())
+
         frame_w = frame.pivot(columns="Nutrient", index="Source", values="Value")
+        return_dict[key] = frame_w.reset_index()
+
+    for key, frame in return_dict.items():
         if id_key == "huc12":
-            frame_w["huc"] = id_value
+            return_dict[key]["huc"] = id_value
         if id_key == "comid":
-            frame_w["comid"] = id_value
+            return_dict[key]["comid"] = id_value
             if huc != "":
-                frame_w["huc"] = huc
-        frame_w["gwlfe_endpoint"] = "wikisrat"
-        frame_w["huc_level"] = 12
-        return_dict[key] = frame_w
-    return return_dict
+                return_dict[key]["huc"] = huc
+        return_dict[key]["gwlfe_endpoint"] = "wikisrat"
+        return_dict[key]["huc_level"] = 12
+
+    return copy.deepcopy(return_dict)
 
 
 #%%
 # create empty lists to hold results
 cum_results = {
-    "wikisrat_catchment_loading_rates": [],
-    "wikisrat_reach_concentrations": [],
+    "catchment_total_local_load": [],
+    "reach_concentrations": [],
+    "reach_average_flow": [],
+    "reach_pt_source_conc": [],
+    # NOTE:  Individual land use sources are NOT valid when applying restorations, only the totals
+    "catchment_sources_local_load": [],
 }
 
 
@@ -241,19 +287,20 @@ for huc8_id, huc8 in hucs_to_run.groupby(by=["huc8"]):
     logging.info("  Loading GWLF-E Results")
     huc8_dict = {}
     for _, huc_row in huc8.iterrows():
-        gwlfe_result_file_name = gwlfe_json_dump_path+"{}_{}_{{}}_subbasin_run.json".format(
-            huc_row["huc"], land_use_layer, weather_layer
+        gwlfe_result_file_name = (
+            gwlfe_json_dump_path
+            + "{}_{}_{{}}_subbasin_run.json".format(
+                huc_row["huc"], land_use_layer, weather_layer
+            )
         )
-        gwlfe_result_file=None
-        for weather_source in[weather_layer,"USEPA_1960_1990"]:
+        gwlfe_result_file = None
+        for weather_source in [weather_layer, "USEPA_1960_1990"]:
             if Path(gwlfe_result_file_name.format(weather_source)).is_file():
-                gwlfe_result_file=gwlfe_result_file_name.format(weather_source)
+                gwlfe_result_file = gwlfe_result_file_name.format(weather_source)
 
         gwlfe_sb_result = None
         if gwlfe_result_file is not None:
-            f = (
-                open(gwlfe_result_file)
-            )
+            f = open(gwlfe_result_file)
             req_dump = json.load(f)
             f.close()
             result_raw = req_dump["result_response"]
@@ -269,84 +316,76 @@ for huc8_id, huc8 in hucs_to_run.groupby(by=["huc8"]):
 
     # break
     logging.info("  Running SRAT")
-    wikisrat_result = run_srat(huc8_dict, used_attenuation, used_restoration_sources)
+    for run_group, funding_source_group in funding_source_groups.items():
+        logging.info("    Running for {}".format(run_group))
+        wikisrat_result = run_srat(huc8_dict, used_attenuation, funding_source_group)
 
-    if wikisrat_result is not None:
-        with open(
-            restoration_json_dump_path
-            + "HUC8_{}_wikiSRAT_withBMPs".format(huc8_id)
-            + ".json",
-            "w",
-        ) as fp:
-            json.dump(wikisrat_result, fp, indent=2)
+        if wikisrat_result is not None:
+            with open(
+                restoration_json_dump_path
+                + "HUC8_{}_{}".format(huc8_id, run_group.lower().replace(" ", "_"))
+                + ".json",
+                "w",
+            ) as fp:
+                json.dump(wikisrat_result, fp, indent=2)
 
-    if wikisrat_result is not None:
-        logging.info("  Framing data")
-        for huc12, huc12_wikisrat in wikisrat_result["huc12s"].items():
-            huc12_result = dict.fromkeys(cum_results.keys(), None)
-            h12_cpy = copy.deepcopy(huc12_wikisrat)
-            h12_catches = h12_cpy.pop("catchments")
+        if wikisrat_result is not None:
+            logging.info("      Framing data")
+            for huc12, huc12_wikisrat in wikisrat_result["huc12s"].items():
+                huc12_result = {key: None for key in cum_results.keys()}
+                h12_cpy = copy.deepcopy(huc12_wikisrat)
+                h12_catches = h12_cpy.pop("catchments")
 
-            catch_results = {
-                "wikisrat_catchment_loading_rates": [],
-                "wikisrat_reach_concentrations": [],
-            }
-            for catchment, catch_sources in h12_catches.items():
-                catch_loads = format_wikisrat_return(catch_sources, huc=huc12)
-                catch_results["wikisrat_catchment_loading_rates"].append(
-                    catch_loads["totals"]
-                    .loc[catch_loads["totals"].index == "TotalLoadingRates"]
-                    .copy()
-                    .reset_index()
-                )
-                catch_results["wikisrat_reach_concentrations"].append(
-                    catch_loads["totals"]
-                    .loc[catch_loads["totals"].index == "LoadingRateConcentrations"]
-                    .copy()
-                    .reset_index()
-                )
-            for catch_res_key, catch_list in catch_results.items():
-                if len(catch_list) > 0:
-                    all_catch_frame = pd.concat(catch_list, ignore_index=True)
-                    all_catch_frame["gwlfe_endpoint"] = "wikiSRAT"
-                    all_catch_frame["huc"] = huc12
-                    huc12_result[catch_res_key] = all_catch_frame.copy()
+                catch_results = {key: [] for key in cum_results.keys()}
+                for catchment, catch_sources in h12_catches.items():
+                    catch_loads = format_wikisrat_return(catch_sources, huc=huc12)
+                    catch_results["catchment_total_local_load"].append(
+                        catch_loads["total_local_load"].copy()
+                    )
+                    catch_results["reach_concentrations"].append(
+                        catch_loads["reach_conc"].copy()
+                    )
+                    catch_results["reach_average_flow"].append(
+                        catch_loads["maflowv"].copy()
+                    )
+                    catch_results["reach_pt_source_conc"].append(
+                        catch_loads["conc_ptsource"].copy()
+                    )
+                    if run_group == "No restoration or protection":
+                        # NOTE:  Individual land use sources are NOT valid when applying restorations, only the totals
+                        catch_results["catchment_sources_local_load"].append(
+                            catch_loads["local_loads_by_source"].copy()
+                        )
 
-            for result_key, result_frame in huc12_result.items():
-                if result_frame is not None:
-                    cum_results[result_key].append(result_frame.copy())
+                for catch_res_key, catch_list in catch_results.items():
+                    if len(catch_list) > 0:
+                        all_catch_frame = pd.concat(catch_list, ignore_index=True)
+                        all_catch_frame["gwlfe_endpoint"] = "wikiSRAT"
+                        all_catch_frame["huc"] = huc12
+                        all_catch_frame["run_group"] = run_group
+                        all_catch_frame["funding_sources"] = ", ".join(
+                            funding_source_group
+                        )
+                        huc12_result[catch_res_key] = all_catch_frame.copy()
 
-
-#%%
-# join various results
-wikisrat_catchment_loading_rates = pd.concat(
-    cum_results["wikisrat_catchment_loading_rates"], ignore_index=True
-)
-wikisrat_catchment_loading_rates[
-    "restoration_sources"
-] = used_restoration_sources * len(wikisrat_catchment_loading_rates.index)
-wikisrat_catchment_loading_rates["with_attenuation"] = used_attenuation
-
-wikisrat_reach_concentrations = pd.concat(
-    cum_results["wikisrat_reach_concentrations"], ignore_index=True
-)
-wikisrat_reach_concentrations["restoration_sources"] = used_restoration_sources * len(
-    wikisrat_catchment_loading_rates.index
-)
-wikisrat_reach_concentrations["with_attenuation"] = used_attenuation
+                for result_key, result_frame in huc12_result.items():
+                    if result_frame is not None:
+                        cum_results[result_key].append(result_frame.copy())
+    #     break
+    # break
 
 #%%
-# save csv's
-wikisrat_catchment_loading_rates.sort_values(by=["huc", "comid"]).reset_index(
-    drop=True
-).to_csv(
-    restoration_csv_path + "wikisrat_catchment_loading_rates_with_bmps" + csv_extension
-)
-wikisrat_reach_concentrations.sort_values(by=["huc", "comid"]).reset_index(
-    drop=True
-).to_csv(
-    restoration_csv_path + "wikisrat_reach_concentrations_with_bmps" + csv_extension
-)
+# join various results and save csv's
+for all_res_key, all_list in cum_results.items():
+    if len(all_list) > 0:
+        all_catch_frame = pd.concat(all_list, ignore_index=True)
+        all_catch_frame["with_attenuation"] = used_attenuation
+        all_catch_frame = (
+            all_catch_frame.sort_values(by=["huc", "comid"])
+            .reset_index(drop=True)
+            .copy()
+        )
+        all_catch_frame.to_csv(restoration_csv_path + all_res_key + csv_extension)
 
 
 #%%
