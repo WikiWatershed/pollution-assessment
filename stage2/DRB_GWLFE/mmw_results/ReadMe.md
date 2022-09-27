@@ -28,37 +28,25 @@ When each HUC-12 is submitted individually to the WikiSRAT microservice, it fail
 - [attenuated_load_summaries.csv](https://github.com/WikiWatershed/pollution-assessment/blob/main/stage2/DRB_GWLFE/mmw_results/attenuated_load_summaries.csv)
   - Attenuated annual estimated nutrient loads and outflow stream concentrations for each HUC-12
   - These loads are reduced by attenuating the loads through the stream network.
+  - **This is not used for further analysis!**
 
 - [attenuated_source_summaries.csv](https://github.com/WikiWatershed/pollution-assessment/blob/main/stage2/DRB_GWLFE/mmw_results/attenuated_source_summaries.csv)
   - Attenuated annual estimated nutrient loads and outflow stream concentrations for each HUC-12, broken down by the source of each load (land uses and point sources)
   - These loads are reduced by attenuating the loads through the stream network.
   - Attenuation based on only a single HUC-12
+  - **This is not used for further analysis!**
 
 - [catchment_loading_rates.csv](https://github.com/WikiWatershed/pollution-assessment/blob/main/stage2/DRB_GWLFE/mmw_results/catchment_loading_rates.csv)
   - Attenuated annual estimated nutrient loads for each individual catchment basin
   - Attenuation based on only a single HUC-12
+  - **This is not used for further analysis!**
 
 - [catchment_sources.csv](https://github.com/WikiWatershed/pollution-assessment/blob/main/stage2/DRB_GWLFE/mmw_results/catchment_sources.csv)
   - Attenuated annual estimated nutrient loads for each individual catchment basin, broken down by the source of each load (land uses and point sources)
   - Attenuation based on only a single HUC-12
+  - **This is not used for further analysis!**
 
 - [reach_concentrations.csv](https://github.com/WikiWatershed/pollution-assessment/blob/main/stage2/DRB_GWLFE/mmw_results/reach_concentrations.csv)
   - Attenuated annual estimated reach concentrations for the outflow of each individual catchment basin
   - Attenuation based on only a single HUC-12
-
-- [basin_wikisrat_huc_sources.csv](https://github.com/WikiWatershed/pollution-assessment/blob/main/stage2/DRB_GWLFE/mmw_results/basin_wikisrat_huc_sources.csv)
-  - Attenuated annual estimated nutrient loads and outflow stream concentrations for each HUC-12, broken down by the source of each load (land uses and point sources)
-  - These loads are reduced by attenuating the loads through the stream network.
-  - Attenuation based on entire HUC-8
-
-- [basin_wikisrat_catchment_loading_rates.csv](https://github.com/WikiWatershed/pollution-assessment/blob/main/stage2/DRB_GWLFE/mmw_results/basin_wikisrat_catchment_loading_rates.csv)
-  - Attenuated annual estimated nutrient loads for each individual catchment basin
-  - Attenuation based on entire HUC-8
-
-- [basin_wikisrat_catchment_sources.csv](https://github.com/WikiWatershed/pollution-assessment/blob/main/stage2/DRB_GWLFE/mmw_results/basin_wikisrat_catchment_sources.csv)
-  - Attenuated annual estimated nutrient loads for each individual catchment basin, broken down by the source of each load (land uses and point sources)
-  - Attenuation based on entire HUC-8
-
-- [basin_wikisrat_reach_concentrations.csv](https://github.com/WikiWatershed/pollution-assessment/blob/main/stage2/DRB_GWLFE/mmw_results/basin_wikisrat_reach_concentrations.csv)
-  - Attenuated annual estimated reach concentrations for the outflow of each individual catchment basin
-  - Attenuation based on entire HUC-8
+  - **This is not used for further analysis!**
