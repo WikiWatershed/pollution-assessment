@@ -7,7 +7,7 @@ dependencies:
     
     # PyData
     - pandas >=1.4
-    - geopandas
+    - geopandas >=0.11  #GeoParquet support updated
     - pyarrow  # for saving to Parquet from GeoPandas
     - geojson
     - openpyxl # read/write Excel 2010+ files (.xlsx & .xlsm)
@@ -38,6 +38,7 @@ dependencies:
     # package management
     - conda
     - conda-build
+    - conda-libmamba-solver
 
     # PIP install requirements only if it is not  possible with conda
     # https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html#using-pip-in-an-environment
