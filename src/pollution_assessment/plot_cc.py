@@ -142,11 +142,11 @@ def PlotMaps(df_reach, df_catch,
     dp_reach = df_reach.loc[:,(var_reach, 'geom')]  # Avoids 'SettingWithCopyWarning'. See https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copydp_catch = df_catch[[var_catch, 'geom_catchment']].copy()  # Make explict copy, to avoid 'SettingWithCopyWarning'
     dp_catch = df_catch.loc[:,(var_catch, 'geom_catchment')]  # Avoids 'SettingWithCopyWarning'. 
     
-    mask_reach = dp_reach[var_reach] < targ_reach / 100
-    mask_catch = dp_catch[var_catch] < targ_catch / 100
+    mask_reach = dp_reach[var_reach] < targ_reach / 10
+    mask_catch = dp_catch[var_catch] < targ_catch / 10
     
-    dp_reach.loc[mask_reach,var_reach] = targ_reach / 100
-    dp_catch.loc[mask_catch,var_catch] = targ_catch / 100
+    dp_reach.loc[mask_reach,var_reach] = targ_reach / 10
+    dp_catch.loc[mask_catch,var_catch] = targ_catch / 10
 
     # initialize figure
     fig, (ax1, ax2) = plt.subplots(1,2)
@@ -161,38 +161,40 @@ def PlotMaps(df_reach, df_catch,
         min_catch = dp_catch[var_catch].min()
         mid_reach = targ_reach
         mid_catch = targ_catch
-        max_reach = dp_reach[var_reach].max()
-        max_catch = dp_catch[var_catch].max()
+        max_reach = dp_reach[var_reach].quantile(0.99)
+        max_catch = dp_catch[var_catch].quantile(0.99)
     else:
-        min_reach = targ_reach / 100
-        min_catch = targ_catch / 100
-        mid_reach = targ_reach / 30
-        mid_catch = targ_catch / 30
-        max_reach = df_reach[var_reach.split('_')[0] + '_conc'].max()
-        max_catch = df_catch[var_catch.split('_')[0] + '_loadrate'].max()
+        min_reach = targ_reach 
+        min_catch = targ_catch 
+        mid_reach = df_reach[var_reach.split('_')[0] + '_conc'].quantile(0.90)
+        mid_catch = df_catch[var_catch.split('_')[0] + '_loadrate'].quantile(0.85)
+        max_reach = df_reach[var_reach.split('_')[0] + '_conc'].quantile(0.99)
+        max_catch = df_catch[var_catch.split('_')[0] + '_loadrate'].quantile(0.99)
+    # Display min, mid, max
+    print(f'Reach values (min, mid, max) = ({min_reach}, {mid_reach}, {max_reach})')    
+    print(f'Catch values (min, mid, max) = ({min_catch}, {mid_catch}, {max_catch})')    
 
     # normalize around target with MidPointLogNorm
+    norm = matplotlib.colors.Normalize(vmin=min_catch,vmax=max_catch)
+    norm2 = matplotlib.colors.Normalize(vmin=min_reach,vmax=max_reach)
+    lognorm_reach = MidPointLogNorm(vmin=min_reach,vmax=max_reach, 
+                                    midpoint=mid_reach)
+    lognorm_catch = MidPointLogNorm(vmin=min_catch,vmax=max_catch, 
+                                    midpoint=mid_catch)
+
     if colormap != None: 
         r = dp_reach.plot(column=var_reach, lw=1, ax=ax1,
-                          norm= MidPointLogNorm(vmin=min_reach,
-                                                vmax=max_reach, 
-                                                midpoint=mid_reach),
+                          norm=lognorm_reach,
                           cmap = colormap)# matplotlib.colors.LogNorm(vmin, vmax), cmap='RdYlGn_r')
         c = dp_catch.plot(column=var_catch, lw=0.1, ax=ax2, 
-                          norm= MidPointLogNorm(vmin=min_catch,
-                                                vmax=max_catch, 
-                                                midpoint=mid_catch),
+                          norm=lognorm_catch,
                           cmap=colormap)
     else:
         r = dp_reach.plot(column=var_reach, lw=1, ax=ax1,
-                          norm= MidPointLogNorm(vmin=min_reach,
-                                                vmax=max_reach, 
-                                                midpoint=mid_reach),
+                          norm=lognorm_reach,
                           cmap = 'RdYlGn_r')# matplotlib.colors.LogNorm(vmin, vmax), cmap='RdYlGn_r')
         c = dp_catch.plot(column=var_catch, lw=0.1, ax=ax2, 
-                          norm= MidPointLogNorm(vmin=min_catch,
-                                                vmax=max_catch, 
-                                                midpoint=mid_catch),
+                          norm=lognorm_catch,
                           cmap='RdYlGn_r')
     if include_reach == True:
         if zoom == False:
@@ -243,14 +245,10 @@ def PlotMaps(df_reach, df_catch,
     cax = fig.add_axes([0.95, 0.18, 0.02, 0.64]) # adjusts the position of the color bar: right position, bottom, width, top 
     if colormap != None: 
         sm = plt.cm.ScalarMappable(cmap=colormap, 
-                                   norm= MidPointLogNorm(vmin=min_catch,
-                                                         vmax=max_catch, 
-                                                         midpoint=mid_catch))
+                                   norm=lognorm_catch)
     else: 
         sm = plt.cm.ScalarMappable(cmap='RdYlGn_r', 
-                                   norm= MidPointLogNorm(vmin=min_catch,
-                                                         vmax=max_catch, 
-                                                         midpoint=mid_catch))
+                                   norm=lognorm_catch)
     cbr = fig.colorbar(sm, cax=cax,)
     cbr.ax.tick_params(labelsize=8)
     cbr.ax.minorticks_off()
@@ -259,14 +257,10 @@ def PlotMaps(df_reach, df_catch,
     cax2 = fig.add_axes([0.48, 0.18, 0.02, 0.64]) # adjusts the position of the color bar: right position, bottom, width, top 
     if colormap != None: 
         sm2 = plt.cm.ScalarMappable(cmap=colormap,
-                                   norm=MidPointLogNorm(vmin=min_reach,
-                                                        vmax=max_reach, 
-                                                        midpoint=mid_reach))
+                                   norm=lognorm_reach)
     else: 
         sm2 = plt.cm.ScalarMappable(cmap='RdYlGn_r',
-                                   norm=MidPointLogNorm(vmin=min_reach,
-                                                        vmax=max_reach, 
-                                                        midpoint=mid_reach))
+                                   norm=lognorm_reach)
     cbr2 = fig.colorbar(sm2, cax=cax2,)
     cbr2.ax.minorticks_off()
     cbr2.ax.tick_params(labelsize=8) 
