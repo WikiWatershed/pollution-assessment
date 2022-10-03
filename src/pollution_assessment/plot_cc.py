@@ -7,14 +7,15 @@ from shapely.geometry import Polygon
 import contextily as ctx
 
 # packages for viz 
-# import matplotlib
+import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib_scalebar.scalebar import ScaleBar
 from  matplotlib.colors import LogNorm
 
 # import colorcet and plotting libraries
-# import colorcet as cc
-# from colorcet.plotting import swatch, swatches, sine_combs
+import colorcet as cc
+from colorcet.plotting import swatch, swatches, sine_combs
+
 
 
 # *****************************************************************************
@@ -125,8 +126,9 @@ def LatLonExtent(cluster_name, cluster_gdf):
 def PlotMaps(df_reach, df_catch, 
     var_reach, var_catch, 
     targ_reach, targ_catch, 
+    colormap=None, 
     cl=None, cluster_gdf=None, 
-    fa=False, focusarea_gdf = None, 
+    fa=False, focusarea_gdf=None, 
     zoom=False, diff=False, include_reach=False
 ):
     '''
@@ -170,16 +172,28 @@ def PlotMaps(df_reach, df_catch,
         max_catch = df_catch[var_catch.split('_')[0] + '_loadrate'].max()
 
     # normalize around target with MidPointLogNorm
-    r = dp_reach.plot(column=var_reach, lw=1, ax=ax1,
-                      norm= MidPointLogNorm(vmin=min_reach,
-                                            vmax=max_reach, 
-                                            midpoint=mid_reach),
-                      cmap = 'RdYlGn_r')# matplotlib.colors.LogNorm(vmin, vmax), cmap='RdYlGn_r')
-    c = dp_catch.plot(column=var_catch, lw=0.1, ax=ax2, 
-                      norm= MidPointLogNorm(vmin=min_catch,
-                                            vmax=max_catch, 
-                                            midpoint=mid_catch),
-                      cmap='RdYlGn_r')
+    if colormap != None: 
+        r = dp_reach.plot(column=var_reach, lw=1, ax=ax1,
+                          norm= MidPointLogNorm(vmin=min_reach,
+                                                vmax=max_reach, 
+                                                midpoint=mid_reach),
+                          cmap = colormap)# matplotlib.colors.LogNorm(vmin, vmax), cmap='RdYlGn_r')
+        c = dp_catch.plot(column=var_catch, lw=0.1, ax=ax2, 
+                          norm= MidPointLogNorm(vmin=min_catch,
+                                                vmax=max_catch, 
+                                                midpoint=mid_catch),
+                          cmap=colormap)
+    else:
+        r = dp_reach.plot(column=var_reach, lw=1, ax=ax1,
+                          norm= MidPointLogNorm(vmin=min_reach,
+                                                vmax=max_reach, 
+                                                midpoint=mid_reach),
+                          cmap = 'RdYlGn_r')# matplotlib.colors.LogNorm(vmin, vmax), cmap='RdYlGn_r')
+        c = dp_catch.plot(column=var_catch, lw=0.1, ax=ax2, 
+                          norm= MidPointLogNorm(vmin=min_catch,
+                                                vmax=max_catch, 
+                                                midpoint=mid_catch),
+                          cmap='RdYlGn_r')
     if include_reach == True:
         if zoom == False:
             major_streams = df_reach[df_reach['streamorder'] >= 5].loc[:,('streamorder', 'geom')] 
@@ -227,20 +241,32 @@ def PlotMaps(df_reach, df_catch,
 
     # add colorbar - catchment 
     cax = fig.add_axes([0.95, 0.18, 0.02, 0.64]) # adjusts the position of the color bar: right position, bottom, width, top 
-    sm = plt.cm.ScalarMappable(cmap='RdYlGn_r', 
-                               norm= MidPointLogNorm(vmin=min_catch,
-                                                     vmax=max_catch, 
-                                                     midpoint=mid_catch))
+    if colormap != None: 
+        sm = plt.cm.ScalarMappable(cmap=colormap, 
+                                   norm= MidPointLogNorm(vmin=min_catch,
+                                                         vmax=max_catch, 
+                                                         midpoint=mid_catch))
+    else: 
+        sm = plt.cm.ScalarMappable(cmap='RdYlGn_r', 
+                                   norm= MidPointLogNorm(vmin=min_catch,
+                                                         vmax=max_catch, 
+                                                         midpoint=mid_catch))
     cbr = fig.colorbar(sm, cax=cax,)
     cbr.ax.tick_params(labelsize=8)
     cbr.ax.minorticks_off()
 
     # add colorbar - reach
     cax2 = fig.add_axes([0.48, 0.18, 0.02, 0.64]) # adjusts the position of the color bar: right position, bottom, width, top 
-    sm2 = plt.cm.ScalarMappable(cmap='RdYlGn_r',
-                               norm=MidPointLogNorm(vmin=min_reach,
-                                                    vmax=max_reach, 
-                                                    midpoint=mid_reach))
+    if colormap != None: 
+        sm2 = plt.cm.ScalarMappable(cmap=colormap,
+                                   norm=MidPointLogNorm(vmin=min_reach,
+                                                        vmax=max_reach, 
+                                                        midpoint=mid_reach))
+    else: 
+        sm2 = plt.cm.ScalarMappable(cmap='RdYlGn_r',
+                                   norm=MidPointLogNorm(vmin=min_reach,
+                                                        vmax=max_reach, 
+                                                        midpoint=mid_reach))
     cbr2 = fig.colorbar(sm2, cax=cax2,)
     cbr2.ax.minorticks_off()
     cbr2.ax.tick_params(labelsize=8) 
@@ -274,8 +300,8 @@ def PlotMaps(df_reach, df_catch,
     # plt.savefig('figs/%s%s%s%s_%s.svg' % (cl_name, fa_name, zoom_name, var_reach, var_catch)) # to automatically save - can adjust dpi, etch 
     # plt.savefig('figs/%s%s%s%s_%s.png' % (cl_name, fa_name, zoom_name, var_reach, var_catch)) # to automatically save - can adjust dpi, etch 
     plt.show()
-
-
+    
+    
 def LatLonExtent_FA(fa_list, focusarea_gdf):
     '''
     Get lat and lon extent of a foucs area 
@@ -343,8 +369,9 @@ def LatLonExtent_FA(fa_list, focusarea_gdf):
     
     return lon_max, lon_min, lat_max, lat_min, area, h_v
 
+
 # PlotMaps_FA
-def PlotMaps_FA(df_reach, df_catch, var_reach, var_catch, targ_reach, targ_catch, cl=None, cluster_gdf=None, fa=None, focusarea_gdf=None, diff=False, include_reach=True):
+def PlotMaps_FA(df_reach, df_catch, var_reach, var_catch, targ_reach, targ_catch, colormap=None, cl=None, cluster_gdf=None, fa=None, focusarea_gdf=None, diff=False, include_reach=True):
     '''
     plot maps with focus areas
     '''
@@ -382,16 +409,33 @@ def PlotMaps_FA(df_reach, df_catch, var_reach, var_catch, targ_reach, targ_catch
         max_catch = df_catch[var_catch.split('_')[0] + '_loadrate'].max()
 
     # normalize around target with MidPointLogNorm
-    r = dp_reach.plot(column=var_reach, lw=1, ax=ax1,
-                      norm= MidPointLogNorm(vmin=min_reach,
-                                            vmax=max_reach, 
-                                            midpoint=mid_reach),
-                      cmap = 'RdYlGn_r')# matplotlib.colors.LogNorm(vmin, vmax), cmap='RdYlGn_r')
-    c = dp_catch.plot(column=var_catch, lw=0.1, ax=ax2, 
-                      norm= MidPointLogNorm(vmin=min_catch,
-                                            vmax=max_catch, 
-                                            midpoint=mid_catch),
-                      cmap='RdYlGn_r')
+    if colormap != None:
+        r = dp_reach.plot(column=var_reach, lw=1, ax=ax1,
+                          norm= MidPointLogNorm(vmin=min_reach,
+                                                vmax=max_reach, 
+                                                midpoint=mid_reach),
+                          zorder=1,
+                          cmap=colormap)# matplotlib.colors.LogNorm(vmin, vmax), cmap='RdYlGn_r')
+        c = dp_catch.plot(column=var_catch, lw=0.1, ax=ax2, 
+                          norm= MidPointLogNorm(vmin=min_catch,
+                                                vmax=max_catch, 
+                                                midpoint=mid_catch),
+                          zorder=1,
+                          cmap=colormap)
+    else:
+        r = dp_reach.plot(column=var_reach, lw=1, ax=ax1,
+                          norm= MidPointLogNorm(vmin=min_reach,
+                                                vmax=max_reach, 
+                                                midpoint=mid_reach),
+                          zorder=1,
+                          cmap='RdYlGn_r')# matplotlib.colors.LogNorm(vmin, vmax), cmap='RdYlGn_r')
+        c = dp_catch.plot(column=var_catch, lw=0.1, ax=ax2, 
+                          norm= MidPointLogNorm(vmin=min_catch,
+                                                vmax=max_catch, 
+                                                midpoint=mid_catch),
+                          zorder=1,
+                          cmap='RdYlGn_r')
+        
     if include_reach == True:
         major_streams = df_reach[df_reach['streamorder'] >= 3].loc[:,('streamorder', 'geom')] 
         
@@ -416,8 +460,8 @@ def PlotMaps_FA(df_reach, df_catch, var_reach, var_catch, targ_reach, targ_catch
         # print("name discrepancies:", fas, focusarea_gdf.index.unique())
     
         # fas_in_cluster = focusarea_gdf.loc[fas, :]
-    fa_reach = fas_in_cluster.plot(lw=1.25, ax = ax1, facecolor="none", edgecolor="black", zorder=10)
-    fa_catch = fas_in_cluster.plot(lw=1.25, ax=ax2, facecolor = "none", edgecolor="black")
+    fa_reach = fas_in_cluster.plot(lw=1.25, ax = ax1, facecolor="none", edgecolor="black", zorder=1)
+    fa_catch = fas_in_cluster.plot(lw=1.25, ax=ax2, facecolor = "none", edgecolor="black", zorder=1)
 
     # set figure size 
     fig.set_size_inches(12,12)
@@ -435,20 +479,32 @@ def PlotMaps_FA(df_reach, df_catch, var_reach, var_catch, targ_reach, targ_catch
 
     # add colorbar - catchment 
     cax = fig.add_axes([0.95, 0.3, 0.02, 0.4]) # adjusts the position of the color bar: right position, bottom, width, top 
-    sm = plt.cm.ScalarMappable(cmap='RdYlGn_r', 
-                               norm= MidPointLogNorm(vmin=min_catch,
-                                                     vmax=max_catch, 
-                                                     midpoint=mid_catch))
+    if colormap != None: 
+        sm = plt.cm.ScalarMappable(cmap=colormap, 
+                                   norm= MidPointLogNorm(vmin=min_catch,
+                                                         vmax=max_catch, 
+                                                         midpoint=mid_catch))
+    else: 
+        sm = plt.cm.ScalarMappable(cmap='RdYlGn_r', 
+                                   norm= MidPointLogNorm(vmin=min_catch,
+                                                         vmax=max_catch, 
+                                                         midpoint=mid_catch))
     cbr = fig.colorbar(sm, cax=cax,)
     cbr.ax.tick_params(labelsize=8)
     cbr.ax.minorticks_off()
 
     # add colorbar - reach
     cax2 = fig.add_axes([0.48, 0.3, 0.02, 0.4]) # adjusts the position of the color bar: right position, bottom, width, top 
-    sm2 = plt.cm.ScalarMappable(cmap='RdYlGn_r',
-                               norm=MidPointLogNorm(vmin=min_reach,
-                                                    vmax=max_reach, 
-                                                    midpoint=mid_reach))
+    if colormap != None:
+        sm2 = plt.cm.ScalarMappable(cmap=colormap,
+                                   norm=MidPointLogNorm(vmin=min_reach,
+                                                        vmax=max_reach, 
+                                                        midpoint=mid_reach))
+    else: 
+        sm2 = plt.cm.ScalarMappable(cmap='RdYlGn_r', 
+                                   norm= MidPointLogNorm(vmin=min_catch,
+                                                         vmax=max_catch, 
+                                                         midpoint=mid_catch))
     cbr2 = fig.colorbar(sm2, cax=cax2,)
     cbr2.ax.minorticks_off()
     cbr2.ax.tick_params(labelsize=8) 
@@ -458,14 +514,18 @@ def PlotMaps_FA(df_reach, df_catch, var_reach, var_catch, targ_reach, targ_catch
         # change zoom of basemap based on coverage area
         if area < 0.05:
             ctx.add_basemap(ax, source=ctx.providers.CartoDB.Positron, crs=dp_reach.crs.to_string(), zoom=13)
+            ctx.add_basemap(ax, source=ctx.providers.CartoDB.PositronOnlyLabels, crs=dp_reach.crs.to_string(), zoom=13, zorder=2)
         elif area < 1:
             ctx.add_basemap(ax, source=ctx.providers.CartoDB.Positron, crs=dp_reach.crs.to_string(), zoom=11)
+            ctx.add_basemap(ax, source=ctx.providers.CartoDB.PositronOnlyLabels, crs=dp_reach.crs.to_string(), zoom=11, zorder=2)
         elif area < 4:
             ctx.add_basemap(ax, source=ctx.providers.CartoDB.Positron, crs=dp_reach.crs.to_string(), zoom=10)
+            ctx.add_basemap(ax, source=ctx.providers.CartoDB.PositronOnlyLabels, crs=dp_reach.crs.to_string(), zoom=10, zorder=2)
 #         elif area < 5:
 #             ctx.add_basemap(ax, source=ctx.providers.CartoDB.Positron, crs=dp_reach.crs.to_string(), zoom=8)
         else:
             ctx.add_basemap(ax, source=ctx.providers.CartoDB.Positron, crs=dp_reach.crs.to_string(), zoom=9)
+            ctx.add_basemap(ax, source=ctx.providers.CartoDB.PositronOnlyLabels, crs=dp_reach.crs.to_string(), zoom=9, zorder=2)
 
     # naming - #cluster_FA_ZOOM_varreach_varcatch.svg
     # can adjust this convention as desired 
@@ -480,10 +540,13 @@ def PlotMaps_FA(df_reach, df_catch, var_reach, var_catch, targ_reach, targ_catch
     
     for ax in [ax1, ax2]:
         ax.add_artist(ScaleBar(1))
+        
+    # add city labels to plot as top layer 
+    #cities_gdf.plot(ax=ax, marker='*', color="red",zorder=2)
 
     fig.tight_layout(pad=5)
-    # plt.savefig('figs/%s%s%s%s_%s.svg' % (cl_name, fa_name, zoom_name, var_reach, var_catch)) # to automatically save - can adjust dpi, etch 
-    # plt.savefig('figs/%s%s%s%s_%s.png' % (cl_name, fa_name, zoom_name, var_reach, var_catch)) # to automatically save - can adjust dpi, etch 
+    #plt.savefig('figs/%s%s%s%s_%s.svg' % (cl_name, fa_name, zoom_name, var_reach, var_catch)) # to automatically save - can adjust dpi, etch 
+    #plt.savefig('figs/%s%s%s%s_%s.png' % (cl_name, fa_name, zoom_name, var_reach, var_catch)) # to automatically save - can adjust dpi, etch 
     plt.show()
     
     return [lon_max, lon_min, lat_max, lat_min]
