@@ -59,12 +59,13 @@ run_groups = {
     4: 'Direct WPF Protection'
 }
 
-comid_test_list = [
-    4648450,    # no point sources
-    932040160,  # large point sources
-    2583195,    # protection projects
-    932040230,  # restoration and protection projects
-]
+comid_test_dict = {
+    4648450:    'no point sources',
+    4648684:    'Upper E Branch Brandywine',
+    932040160:  'large point sources',
+    2583195:    'protection projects',
+    932040230:  'restoration and protection projects',
+}
 
 # *****************************************************************************
 # Functions
@@ -295,7 +296,7 @@ def add_remaining(
     """
 
     calc_suffix = f'rem{group_key}'
-    input_suffix = 'xs'
+    input_suffix = 'xsnps'
 
     if comid_type == 'reach':
         quantity_type = 'conc'
