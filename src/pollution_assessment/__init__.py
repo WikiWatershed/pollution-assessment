@@ -2,5 +2,4 @@
 __version__ = '0.1.0'
 
 # populate package namespace
-import pollution_assessment.calc
-import pollution_assessment.plot
+from pollution_assessment import calc, plot
