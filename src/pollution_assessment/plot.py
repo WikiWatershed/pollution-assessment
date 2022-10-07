@@ -7,14 +7,13 @@ from shapely.geometry import Polygon
 import contextily as ctx
 
 # packages for viz 
-# import matplotlib
+import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib_scalebar.scalebar import ScaleBar
 from  matplotlib.colors import LogNorm
-
-# import colorcet and plotting libraries
-# import colorcet as cc
-# from colorcet.plotting import swatch, swatches, sine_combs
+import colorcet as cc
+from colorcet.plotting import swatch, swatches, sine_combs
+import holoviews as hv
 
 
 # *****************************************************************************
@@ -591,4 +590,47 @@ def PlotZoom(df_reach, df_catch, var_reach, var_catch, targ_reach, targ_catch, c
             ctx.add_basemap(ax, source=ctx.providers.CartoDB.Positron, crs=df_reach.crs.to_string(), zoom=10)
         else:
             ctx.add_basemap(ax, source=ctx.providers.CartoDB.Positron, crs=df_reach.crs.to_string(), zoom=9)
+    plt.show()
+    
+
+# Plot single pane natural land
+def plot_natural_map(naturalland_gdf, incl_boundary=False, boundary_gdf=None):
+    fig, ax1 = plt.subplots(figsize=(7,15))
+    
+    lon_max, lon_min, lat_max, lat_min, area, h_v = LatLonExtent_FA(list(naturalland_gdf.index), naturalland_gdf)
+
+    min_nl = 0
+    max_nl = 30
+
+    # normalize around target with MidPointLogNorm
+    norm = matplotlib.colors.Normalize(vmin=min_nl, vmax=max_nl)
+
+    # Add protected lands to plot
+    if incl_boundary == True:
+        naturalland_gdf.plot(column='perc_natural',ax=ax1, cmap='cet_CET_CBTL4', norm=norm)
+        boundary_gdf.plot(ax=ax1, facecolor='none', edgecolor='grey')
+    else: 
+        naturalland_gdf.plot(column='perc_natural',ax=ax1, cmap='cet_CET_CBTL4', norm=norm, edgecolor='black')
+        
+    # Turn off ticks
+    plt.tick_params(axis='x', bottom=False, labelbottom=False)
+    plt.tick_params(axis='y', left=False, labelleft=False)
+
+    # Add colorbar
+    cax = fig.add_axes([0.95, 0.215, 0.05, 0.575])
+    sm = plt.cm.ScalarMappable(cmap='cet_CET_CBTL4', 
+                               norm=norm)
+    cbr = fig.colorbar(sm, cax=cax,)
+    cbr.ax.tick_params(labelsize=10)
+    cbr.ax.minorticks_off()
+
+
+    # Add basemap to plot
+    if area < 7:
+        ctx.add_basemap(ax1, source=ctx.providers.CartoDB.Positron, crs=naturalland_gdf.crs.to_string(), zoom=10, interpolation='sinc')
+        ctx.add_basemap(ax1, source=ctx.providers.CartoDB.PositronOnlyLabels, crs=naturalland_gdf.crs.to_string(), zoom=10, zorder=2, interpolation='sinc')
+    else:
+        ctx.add_basemap(ax1, source=ctx.providers.CartoDB.Positron, crs=naturalland_gdf.crs.to_string(), zoom=9, interpolation='sinc')
+        ctx.add_basemap(ax1, source=ctx.providers.CartoDB.PositronOnlyLabels, crs=naturalland_gdf.crs.to_string(), zoom=9, zorder=2, interpolation='sinc')
+        
     plt.show()
