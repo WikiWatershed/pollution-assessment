@@ -169,16 +169,22 @@ def PlotMaps(df_reach, df_catch,
         max_catch = df_catch[var_catch.split('_')[0] + '_loadrate'].max()
 
     # normalize around target with MidPointLogNorm
+    # Set alphas so that reaches below the threshold are grey and catchments below threhold are transparent
+    r_alphas = [1 if i < min_reach else 0 for i in dp_reach[var_reach]]
+    c_alphas = [0 if i < min_catch else 1 for i in dp_catch[var_catch]]
+    
     r = dp_reach.plot(column=var_reach, lw=1, ax=ax1,
                       norm= MidPointLogNorm(vmin=min_reach,
                                             vmax=max_reach, 
                                             midpoint=mid_reach),
                       cmap = 'RdYlGn_r')# matplotlib.colors.LogNorm(vmin, vmax), cmap='RdYlGn_r')
+    r_below = dp_reach.plot(lw=1, ax=ax1, color='#D4DADC', alpha=r_alphas)
+    
     c = dp_catch.plot(column=var_catch, lw=0.1, ax=ax2, 
                       norm= MidPointLogNorm(vmin=min_catch,
                                             vmax=max_catch, 
                                             midpoint=mid_catch),
-                      cmap='RdYlGn_r')
+                      cmap='RdYlGn_r', alpha=c_alphas)
     if include_reach == True:
         if zoom == False:
             major_streams = df_reach[df_reach['streamorder'] >= 5].loc[:,('streamorder', 'geom')] 
@@ -246,13 +252,16 @@ def PlotMaps(df_reach, df_catch,
 
     for ax in [ax1, ax2]:
         if zoom==False:
-            ctx.add_basemap(ax, source=ctx.providers.CartoDB.Positron, crs=dp_reach.crs.to_string(), zoom=7)
+            ctx.add_basemap(ax, source=ctx.providers.CartoDB.Positron, crs=dp_reach.crs.to_string(), zoom=7, interpolation='sinc')
+            ctx.add_basemap(ax, source=ctx.providers.CartoDB.PositronOnlyLabels, crs=dp_reach.crs.to_string(), zoom=7, zorder=2, interpolation='sinc')
         else:
             # change zoom of basemap based on coverage area
             if area < 7:
-                ctx.add_basemap(ax, source=ctx.providers.CartoDB.Positron, crs=dp_reach.crs.to_string(), zoom=10)
+                ctx.add_basemap(ax, source=ctx.providers.CartoDB.Positron, crs=dp_reach.crs.to_string(), zoom=10, interpolation='sinc')
+                ctx.add_basemap(ax, source=ctx.providers.CartoDB.PositronOnlyLabels, crs=dp_reach.crs.to_string(), zoom=10, zorder=2, interpolation='sinc')
             else:
-                ctx.add_basemap(ax, source=ctx.providers.CartoDB.Positron, crs=dp_reach.crs.to_string(), zoom=9)
+                ctx.add_basemap(ax, source=ctx.providers.CartoDB.Positron, crs=dp_reach.crs.to_string(), zoom=9, interpolation='sinc')
+                ctx.add_basemap(ax, source=ctx.providers.CartoDB.PositronOnlyLabels, crs=dp_reach.crs.to_string(), zoom=9, zorder=2, interpolation='sinc')
 
     # naming - #cluster_FA_ZOOM_varreach_varcatch.svg
     # can adjust this convention as desired 
@@ -380,17 +389,25 @@ def PlotMaps_FA(df_reach, df_catch, var_reach, var_catch, targ_reach, targ_catch
         max_reach = df_reach[var_reach.split('_')[0] + '_conc'].max()
         max_catch = df_catch[var_catch.split('_')[0] + '_loadrate'].max()
 
-    # normalize around target with MidPointLogNorm
+    # normalize around target with MidPointLogNorm & plot reach and catchment heatmaps
+    # Set alphas so that reaches below the threshold are grey and catchments below threhold are transparent
+    r_alphas = [1 if i < min_reach else 0 for i in dp_reach[var_reach]]    
+    c_alphas = [0 if i < min_catch else 1 for i in dp_catch[var_catch]]
+
     r = dp_reach.plot(column=var_reach, lw=1, ax=ax1,
                       norm= MidPointLogNorm(vmin=min_reach,
                                             vmax=max_reach, 
                                             midpoint=mid_reach),
                       cmap = 'RdYlGn_r')# matplotlib.colors.LogNorm(vmin, vmax), cmap='RdYlGn_r')
+    # Plot reaches below the threshold as grey
+    r_below = dp_reach.plot(lw=1, ax=ax1, color='#D4DADC', alpha=r_alphas)
+    
     c = dp_catch.plot(column=var_catch, lw=0.1, ax=ax2, 
                       norm= MidPointLogNorm(vmin=min_catch,
                                             vmax=max_catch, 
                                             midpoint=mid_catch),
-                      cmap='RdYlGn_r')
+                      cmap='RdYlGn_r', alpha=c_alphas)
+    
     if include_reach == True:
         major_streams = df_reach[df_reach['streamorder'] >= 3].loc[:,('streamorder', 'geom')] 
         
@@ -456,15 +473,20 @@ def PlotMaps_FA(df_reach, df_catch, var_reach, var_catch, targ_reach, targ_catch
        
         # change zoom of basemap based on coverage area
         if area < 0.05:
-            ctx.add_basemap(ax, source=ctx.providers.CartoDB.Positron, crs=dp_reach.crs.to_string(), zoom=13)
+            ctx.add_basemap(ax, source=ctx.providers.CartoDB.Positron, crs=dp_reach.crs.to_string(), zoom=13, interpolation='sinc')
+            ctx.add_basemap(ax, source=ctx.providers.CartoDB.PositronOnlyLabels, crs=dp_reach.crs.to_string(), zoom=13, zorder=2, interpolation='sinc')
         elif area < 1:
-            ctx.add_basemap(ax, source=ctx.providers.CartoDB.Positron, crs=dp_reach.crs.to_string(), zoom=11)
+            ctx.add_basemap(ax, source=ctx.providers.CartoDB.Positron, crs=dp_reach.crs.to_string(), zoom=11, interpolation='sinc')
+            ctx.add_basemap(ax, source=ctx.providers.CartoDB.PositronOnlyLabels, crs=dp_reach.crs.to_string(), zoom=11, zorder=2, interpolation='sinc')
         elif area < 4:
-            ctx.add_basemap(ax, source=ctx.providers.CartoDB.Positron, crs=dp_reach.crs.to_string(), zoom=10)
+            ctx.add_basemap(ax, source=ctx.providers.CartoDB.Positron, crs=dp_reach.crs.to_string(), zoom=10, interpolation='sinc')
+            ctx.add_basemap(ax, source=ctx.providers.CartoDB.PositronOnlyLabels, crs=dp_reach.crs.to_string(), zoom=10, zorder=2, interpolation='sinc')
 #         elif area < 5:
-#             ctx.add_basemap(ax, source=ctx.providers.CartoDB.Positron, crs=dp_reach.crs.to_string(), zoom=8)
+#             ctx.add_basemap(ax, source=ctx.providers.CartoDB.Positron, crs=dp_reach.crs.to_string(), zoom=8, interpolation='sinc')
+#             ctx.add_basemap(ax, source=ctx.providers.CartoDB.PositronOnlyLabels, crs=dp_reach.crs.to_string(), zoom=8, zorder=2, interpolation='sinc')
         else:
-            ctx.add_basemap(ax, source=ctx.providers.CartoDB.Positron, crs=dp_reach.crs.to_string(), zoom=9)
+            ctx.add_basemap(ax, source=ctx.providers.CartoDB.Positron, crs=dp_reach.crs.to_string(), zoom=9, interpolation='sinc')
+            ctx.add_basemap(ax, source=ctx.providers.CartoDB.PositronOnlyLabels, crs=dp_reach.crs.to_string(), zoom=9, zorder=2, interpolation='sinc')
 
     # naming - #cluster_FA_ZOOM_varreach_varcatch.svg
     # can adjust this convention as desired 
@@ -587,9 +609,12 @@ def PlotZoom(df_reach, df_catch, var_reach, var_catch, targ_reach, targ_catch, c
 
     for ax in [ax1, ax2, ax3, ax4]:
         if area < 7:
-            ctx.add_basemap(ax, source=ctx.providers.CartoDB.Positron, crs=df_reach.crs.to_string(), zoom=10)
+            ctx.add_basemap(ax, source=ctx.providers.CartoDB.Positron, crs=df_reach.crs.to_string(), zoom=10, interpolation='sinc')
+            ctx.add_basemap(ax, source=ctx.providers.CartoDB.PositronOnlyLabels, crs=df_reach.crs.to_string(), zoom=10, zorder=2, interpolation='sinc')
         else:
-            ctx.add_basemap(ax, source=ctx.providers.CartoDB.Positron, crs=df_reach.crs.to_string(), zoom=9)
+            ctx.add_basemap(ax, source=ctx.providers.CartoDB.Positron, crs=df_reach.crs.to_string(), zoom=9, interpolation='sinc')
+            ctx.add_basemap(ax, source=ctx.providers.CartoDB.PositronOnlyLabels, crs=df_reach.crs.to_string(), zoom=9, zorder=2, interpolation='sinc')
+
     plt.show()
     
 
@@ -605,20 +630,25 @@ def plot_natural_map(naturalland_gdf, incl_boundary=False, boundary_gdf=None):
     # normalize around target with MidPointLogNorm
     norm = matplotlib.colors.Normalize(vmin=min_nl, vmax=max_nl)
 
+    # Add alpha for facecolor so that values above the threshold are transparent
+    alphas = [0 if i > max_nl else 1 for i in naturalland_gdf['perc_natural']]
+
     # Add protected lands to plot
     if incl_boundary == True:
-        naturalland_gdf.plot(column='perc_natural',ax=ax1, cmap='cet_CET_CBTL4', norm=norm)
-        boundary_gdf.plot(ax=ax1, facecolor='none', edgecolor='grey')
+        naturalland_gdf.plot(column='perc_natural',ax=ax1, cmap='cet_CET_CBTL4', norm=norm, alpha=alphas)
+        boundary_gdf.plot(ax=ax1, facecolor='none', edgecolor='black')
     else: 
-        naturalland_gdf.plot(column='perc_natural',ax=ax1, cmap='cet_CET_CBTL4', norm=norm, edgecolor='black')
+        naturalland_gdf.plot(column='perc_natural',ax=ax1, cmap='cet_CET_CBTL4', norm=norm, alpha=alphas)
+        naturalland_gdf.plot(ax=ax1, facecolor='none', edgecolor='black')
+
         
     # Turn off ticks
     plt.tick_params(axis='x', bottom=False, labelbottom=False)
     plt.tick_params(axis='y', left=False, labelleft=False)
 
     # Add colorbar
-    cax = fig.add_axes([0.95, 0.215, 0.05, 0.575])
-    sm = plt.cm.ScalarMappable(cmap='cet_CET_CBTL4', 
+    cax = fig.add_axes([0.95, 0.205, 0.05, 0.58])
+    sm = plt.cm.ScalarMappable(cmap='cet_CET_CBTL4',
                                norm=norm)
     cbr = fig.colorbar(sm, cax=cax,)
     cbr.ax.tick_params(labelsize=10)

@@ -31,8 +31,8 @@ def bar_labels(bar_values: pd.Series) -> pd.Series:
 
 
 # Sort focus areas by natural land levels
-def sort_nat_levels(natland_gdf: gpd.GeoDataFrame, low_bound=30: float, 
-                    high_bound=55: float) -> list:
+def sort_nat_levels(natland_gdf: gpd.GeoDataFrame, low_bound: float = 30,
+                    high_bound: float = 55) -> list:
     """ Sort focus areas into three degrees of natural land cover based on user 
     specified bounds.
     
@@ -137,13 +137,13 @@ def plot_natural_cluster(fa_gdf: gpd.GeoDataFrame, legend_loc: str, anchor: list
 
     for cluster in clusters:
         # Select just FAs within a given cluster and sort by percent natural
-        sgdf = fa_gdf[fa_gdf['cluster'] == cluster]        
+        sgdf = fa_gdf[fa_gdf['cluster'] == cluster]
         sorted_gdf = sgdf.sort_values('perc_natural')
 
         # Initiate plot
         ax = plt.subplot(4,2,n) 
 
-        plot_natural(sorted_gdf, legend_loc, anchor, nat_low_bound, nat_high_bound)
+        plot_natural(sorted_gdf, legend_loc, anchor)
 
         n = n+1
 
@@ -155,7 +155,7 @@ def plot_natural_cluster(fa_gdf: gpd.GeoDataFrame, legend_loc: str, anchor: list
 
 # Create bar chart of natural lands and protection practices broken down by natural land level
 def plot_natural_level(fa_gdf: gpd.GeoDataFrame, legend_loc: str, anchor: list,
-                      nat_low_bound=30, nat_high_bound=55):
+                      nat_low_bound: float = 30, nat_high_bound: float = 55):
     """ Plot a barchart of natural lands in a a given natural land level (high, 
     medium, or low.
     
