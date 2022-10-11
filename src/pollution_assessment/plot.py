@@ -664,3 +664,51 @@ def plot_natural_map(naturalland_gdf, incl_boundary=False, boundary_gdf=None):
         ctx.add_basemap(ax1, source=ctx.providers.CartoDB.PositronOnlyLabels, crs=naturalland_gdf.crs.to_string(), zoom=9, zorder=2, interpolation='sinc')
         
     plt.show()
+    
+    
+    
+def plot_natural_protected_map(naturalprotecland_gdf, incl_boundary=False, boundary_gdf=None):
+    fig, ax1 = plt.subplots(figsize=(7,15))
+    
+    lon_max, lon_min, lat_max, lat_min, area, h_v = LatLonExtent_FA(list(naturalprotecland_gdf.index), naturalprotecland_gdf)
+
+    min_nl = 0
+    max_nl = 30
+
+    # normalize around target with MidPointLogNorm
+    norm = matplotlib.colors.Normalize(vmin=min_nl, vmax=max_nl)
+
+    # Add alpha for facecolor so that values above the threshold are transparent
+    alphas = [0 if i > max_nl else 1 for i in naturalprotecland_gdf['Tot_PercNatProtec']]
+
+    # Add protected lands to plot
+    if incl_boundary == True:
+        naturalprotecland_gdf.plot(column='Tot_PercNatProtec',ax=ax1, cmap='cet_CET_CBTL4', norm=norm, alpha=alphas)
+        boundary_gdf.plot(ax=ax1, facecolor='none', edgecolor='black')
+    else: 
+        naturalprotecland_gdf.plot(column='Tot_PercNatProtec',ax=ax1, cmap='cet_CET_CBTL4', norm=norm, alpha=alphas)
+        naturalland_gdf.plot(ax=ax1, facecolor='none', edgecolor='black')
+
+        
+    # Turn off ticks
+    plt.tick_params(axis='x', bottom=False, labelbottom=False)
+    plt.tick_params(axis='y', left=False, labelleft=False)
+
+    # Add colorbar
+    cax = fig.add_axes([0.95, 0.205, 0.05, 0.58])
+    sm = plt.cm.ScalarMappable(cmap='cet_CET_CBTL4',
+                               norm=norm)
+    cbr = fig.colorbar(sm, cax=cax,)
+    cbr.ax.tick_params(labelsize=10)
+    cbr.ax.minorticks_off()
+
+
+    # Add basemap to plot
+    if area < 7:
+        ctx.add_basemap(ax1, source=ctx.providers.CartoDB.Positron, crs=naturalprotecland_gdf.crs.to_string(), zoom=10, interpolation='sinc')
+        ctx.add_basemap(ax1, source=ctx.providers.CartoDB.PositronOnlyLabels, crs=naturalprotecland_gdf.crs.to_string(), zoom=10, zorder=2, interpolation='sinc')
+    else:
+        ctx.add_basemap(ax1, source=ctx.providers.CartoDB.Positron, crs=naturalprotecland_gdf.crs.to_string(), zoom=9, interpolation='sinc')
+        ctx.add_basemap(ax1, source=ctx.providers.CartoDB.PositronOnlyLabels, crs=naturalprotecland_gdf.crs.to_string(), zoom=9, zorder=2, interpolation='sinc')
+        
+    plt.show()
