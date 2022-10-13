@@ -6,11 +6,16 @@ import holoviews as hv
 from holoviews.operation.datashader import datashade, rasterize
 import geoviews as gv
 import hvplot
+import matplotlib
+import matplotlib.pyplot as plt
+from mpl_toolkits.axes_grid1 import AxesGrid
 hv.extension("bokeh")
 
 warnings.filterwarnings('ignore', message='.*Iteration over multi-part geometries is deprecated and will be removed in Shapely 2.0. Use the `geoms` property to access the constituent parts of a multi-part geometry*')
 
-def project_gdf(gdf: geopandas.geodataframe.GeoDataFrame): -> geopandas.geodataframe.GeoDataFrame
+DIFF_SUFFIXES = ['xs', 'rem']
+
+def project_gdf(gdf: gpd.geodataframe.GeoDataFrame) -> gpd.geodataframe.GeoDataFrame:
 	'''
 	Geoviews requires certain projections for plotting
 
@@ -24,7 +29,7 @@ def project_gdf(gdf: geopandas.geodataframe.GeoDataFrame): -> geopandas.geodataf
 	gdf_proj = gdf.to_crs('EPSG:4326')
 	return gdf_proj
 
-def rename_geometry_column(gdf: geopandas.geodataframe.GeoDataFrame): -> geopandas.geodataframe.GeoDataFrame
+def rename_geometry_column(gdf: gpd.geodataframe.GeoDataFrame) -> gpd.geodataframe.GeoDataFrame:
 	'''
 	Geoviews requires the geometry column is named 'geometry'
 
@@ -38,7 +43,7 @@ def rename_geometry_column(gdf: geopandas.geodataframe.GeoDataFrame): -> geopand
 	gdf_renamed = gdf.rename(columns={geom_name:"geometry"})
 	return gdf_renamed
 
-def remove_invalid_geometry(gdf: geopandas.geodataframe.GeoDataFrame): -> geopandas.geodataframe.GeoDataFrame
+def remove_invalid_geometry(gdf: gpd.geodataframe.GeoDataFrame) -> gpd.geodataframe.GeoDataFrame:
 	'''
 	Geoviews cannot include null geometries. This function removes any null geometries. 
 
@@ -48,10 +53,10 @@ def remove_invalid_geometry(gdf: geopandas.geodataframe.GeoDataFrame): -> geopan
 	Returns:
 		gdf_renamed: 	Pandas geodataframe with all non-null geometries 
 	'''
-	gdf_valid = gdf_proj[~gdf.geom_type.isna()]
+	gdf_valid = gdf[~gdf.geom_type.isna()]
 	return gdf_valid
 
-def prep_gdf(gdf: geopandas.geodataframe.GeoDataFrame): -> geopandas.geodataframe.GeoDataFrame
+def prep_gdf(gdf: gpd.geodataframe.GeoDataFrame) -> gpd.geodataframe.GeoDataFrame:
 	'''
 	Pull together all pre-processing steps for plotting the results 
 
@@ -66,12 +71,132 @@ def prep_gdf(gdf: geopandas.geodataframe.GeoDataFrame): -> geopandas.geodatafram
 	gdf_final = remove_invalid_geometry(gdf_renamed)
 	return gdf_final
 
+def normalize_data(data: np.array) -> np.array:
+	'''
+	Normalize values in a list over 0, 1
+
+	Parameters:
+		data: 		Array of values to normalize over 0, 1
+
+	Returns:
+		norm_data:	Normalized array of values
+
+
+	'''
+	norm_data = (data - np.min(data)) / (np.max(data) - np.min(data))
+	return norm_data
+
+def shift_color_map(cmap, vmin, vmid, vmax, name='shiftedcmap'):
+    '''
+    Function to offset the "center" of a colormap. 
+    Holoviews doesn't appear to offer the same flexibility of color normalization as matplotlib
+    So we skew the colorbar itself instead. 
+    Adapted from: https://stackoverflow.com/questions/7404116/defining-the-midpoint-of-a-colormap-in-matplotlib
+    Question: does this work on not 0 to 1 range?
+
+    Parameters
+    -----
+		cmap: 	The matplotlib colormap to be altered
+	    vmin: 	Offset from lowest point in the colormap's range.
+	    vmid: 	The new center of the colormap. 
+	    vmax: 	Offset from highest point in the colormap's range.
+
+    Returns:
+      new_cmap: Matplotlib colormap skewed as specified. 
+    '''
+    cdict = {
+        'red': [],
+        'green': [],
+        'blue': [],
+        'alpha': []
+    }
+    norm_vals = normalize_data(np.array([np.log(vmin), np.log(vmid), np.log(vmax)]))
+    vmin = norm_vals[0]
+    vmid = norm_vals[1]
+    vmax = norm_vals[2]
+
+    # regular index to compute the colors
+    reg_index = np.linspace(0, 1, 257)
+
+    # shifted index to match the data
+    shift_index = np.hstack([
+        np.linspace(0.0, vmid, 128, endpoint=False), 
+        np.linspace(vmid, 1.0, 129, endpoint=True)
+    ])
+
+    for ri, si in zip(reg_index, shift_index):
+        ncmap = matplotlib.cm.get_cmap(cmap)
+        r, g, b, a = ncmap(ri)
+
+        cdict['red'].append((si, r, r))
+        cdict['green'].append((si, g, g))
+        cdict['blue'].append((si, b, b))
+        cdict['alpha'].append((si, a, a))
+
+    new_cmap = matplotlib.colors.LinearSegmentedColormap(name, cdict)
+    plt.register_cmap(cmap=new_cmap)
+
+    return new_cmap
+
+def is_diff(var: str) -> bool:
+	'''
+	Determine if the plotting variable is 'xs' or 'rem', 
+	which defines how the colorbar should be scaled. 
+
+	Parameters:
+		var:	Plotting variable
+
+	Returns:
+		bool:	True if it is 'xs' or 'rem', else False. 
+	''' 
+	suffix = var.split('_')[-1]
+	if suffix[0:2] in DIFF_SUFFIXES:
+		return True
+	elif suffix[0:3] in DIFF_SUFFIXES:
+		return True
+	else:
+		return False
+
+def define_colorbar_extremes(gdf: gpd.geodataframe.GeoDataFrame, var: str, diff: bool, targ: float, geometry_type: str):
+	'''
+	Defines minimum, maximum, and midpoint values for skewed colorbar. 
+	These display the hotspot data in a way that is easier to visualize. 
+
+	Parameter:
+		gdf:			Pandas geodataframe. Geometry can be either MultiLineString or MultiPolygon.
+		var:			Variable to plot. 
+		diff:			Boolean indiciating whether or not we're plotting excess. 
+		targ:			The target, defined in p.calc.NAME_OF_VAR <- we could define a dictionary of
+							these so we don't have to keep passing the values. 
+		geometry_type:	Indicator of whether we are plotting lines (reaches) or polygons (NHD catchments or HUCs)
+
+	Returns:
+		vmin:			Minimum value for colormap
+		vmid:			Midpoint value for colormap
+		vmax:			Maximum value for colormap
+	'''
+	gdp = gdf.loc[:,(var, 'geometry')] 
+	if diff == False:
+	    vmin = gdp[var].min()
+	    vmid = targ
+	    vmax = gdp[var].quantile(0.99)
+	else:
+	    vmin = targ
+	    if geometry_type == "MultiLineString":
+	    	vmid = gdf[var.split('_')[0] + '_conc'].quantile(0.90)
+	    	vmax = gdf[var.split('_')[0] + '_conc'].quantile(0.99)
+	    elif geometry_type == "MultiPolygon":
+	    	vmid = gdf[var.split('_')[0] + '_loadrate'].quantile(0.85)
+	    	vmax = gdf[var.split('_')[0] + '_loadrate'].quantile(0.99)
+	return vmin, vmid, vmax
+
 
 def plot(
-			gdf: geopandas.geodataframe.GeoDataFrame, var: str, 
-			cmap = 'OrRd': str, line_width = 0.1: float, colorbar = True: bool,
-			height = 750: int, width = 500: int, tools = ['hover']: list, 
-			basemap = gv.tile_sources.CartoLight(): geoviews.element.geo.WMTS):
+			gdf: gpd.geodataframe.GeoDataFrame, var: str, targ: float,
+			cmap = 'OrRd', line_width = 0.1, colorbar = True,
+			height = 750, width = 500, tools = ['hover'], 
+			basemap = gv.tile_sources.CartoLight(), 
+			cnorm = 'log', skew_cbar = True):
 	'''
 	Main plotting function for all DRWI geometries, 
 	including reaches (MultiLineString), NHD catchments (MultiPolygon),
@@ -80,13 +205,16 @@ def plot(
 	Parameters:
 		gdf:			Pandas geodataframe. Geometry can be either MultiLineString or MultiPolygon.
 		var:			Variable to plot. 
-		camp: 			Color map for plotting. Default is the orange to red colormap. 
+		targ:			The target, defined in p.calc.NAME_OF_VAR <- we could define a dictionary of
+							these so we don't have to keep passing the values. 
+		cmap: 			Color map for plotting. Default is the orange to red colormap. 
 		line_width:		The width of lines to plot (currently used for Polygon boundaries only). Default is 0.1.
 		colorbar:		Boolean indicating whether or not to plot colorbar. 
 		height:			Height of plot
 		width:			Width of plot 
 		tools:			List indicating which bokeh tools to plot. Default is to just have hover. 
 		basemap:		Which geoviews tile source to plot over (https://geoviews.org/user_guide/Working_with_Bokeh.html)
+		cnorm:			Default to a logscale. 
 
 	Returns:
 		TBD
@@ -99,19 +227,31 @@ def plot(
 	# Prepare GDF for plotting functions 
 	gdf = prep_gdf(gdf)
 
+	# Determine if difference variable
+	diff = is_diff(var)
+
 	# Define geometry type to determine which plotting function to use 
 	geometry_type = gdf.geom_type.unique()[0]
+
+	# Change colorbar
+	if skew_cbar == True:
+		vmin, vmid, vmax = define_colorbar_extremes(gdf, var, diff, targ, geometry_type)
+		cmap = shift_color_map(cmap, vmin, vmid, vmax)
+	else:
+		pass
+
 	if geometry_type == "MultiLineString":
-		plot_lines(gdf, var, cmap, colorbar, height, width, tools, basemap)
+		map_plot = plot_lines(gdf, var, cmap=cmap, colorbar=colorbar, cnorm = cnorm, height=height, width=width, tools=tools, basemap=basemap)
 	elif geometry_type == "MultiPolygon":
-		plot_polys(gdf, cmap, line_width, colorbar, height, width, tools, basemap)
+		map_plot = plot_polys(gdf, var, cmap=cmap, line_width=line_width, colorbar=colorbar, cnorm = cnorm, height=height, width=width, tools=tools, basemap=basemap, vmin=vmin, vmax=vmax)
 	else:
 		print(f"Error! Not equipped to handle {geometry_type}.")
 		print("Please ensure your geometries are MultiLineString or MultiPolygon")
-		return 
+		return
+	return map_plot, gdf 
 
 
-def plot_poly(self, gdf: geopandas.geodataframe.GeoDataFrame, var: str, **kwargs): -> geoviews.element.geo.Polygons
+def plot_polys(gdf: gpd.geodataframe.GeoDataFrame, var: str, **kwargs) -> gv.element.geo.Polygons:
 	'''
 	Plot polygons in the DRWI (e.g., NHD+ catchments or HUCs)
 
@@ -123,18 +263,20 @@ def plot_poly(self, gdf: geopandas.geodataframe.GeoDataFrame, var: str, **kwargs
 		poly_map: 	Polygon map colored by variable of choice plotted on basemap.  
 	'''
 	poly_map = gv.Polygons(gdf, vdims=[var]).opts(
-													height = height,
-													width = width,
-													colorbar = colorbar,
-													cmap = cmap,
-													line_width = line_width,
+													height = kwargs['height'],
+													width = kwargs['width'],
+													colorbar = kwargs['colorbar'],
+													cmap = kwargs['cmap'],
+													cnorm = kwargs['cnorm'],
+													clim = (kwargs['vmin'], kwargs['vmax']),
+													line_width = kwargs['line_width'],
 													title = var,
-													tools = tools
+													tools = kwargs['tools']
 												)
-	return poly_map * basemap 
+	return poly_map * kwargs['basemap'] 
 
 
-def plot_lines(gdf: geopandas.geodataframe.GeoDataFrame, var: str, **kwargs): -> geoviews.element.geo.Path
+def plot_lines(gdf: gpd.geodataframe.GeoDataFrame, var: str, **kwargs) -> gv.element.geo.Path:
 	'''
 	Plot lines in the DRWI (e.g., stream reaches)
 
@@ -146,17 +288,18 @@ def plot_lines(gdf: geopandas.geodataframe.GeoDataFrame, var: str, **kwargs): ->
 	Returns:
 		line_map: Polyline map colored by variable of choice plotted on basemap.  
 	'''
-	line_map = gv.Path(gdf, vdims=[var]).opts(
-												height = height,
-												width = width, 
+	line_map = gv.Path(gdf, vdims=var).opts(
+												height = kwargs['height'],
+												width = kwargs['width'],
 												color = var, 
-												colorbar = colorbar, 
-												cmap = cmap, 
-												line_width = line_width,
+												colorbar = kwargs['colorbar'],
+												cnorm = kwargs['cnorm'], 
+												cmap = kwargs['cmap'], 
 												title = var, 
-												tools = tools)
+												tools = kwargs['tools'])
 
-	return
+	return line_map * kwargs['basemap'] 
+
 
 
 
