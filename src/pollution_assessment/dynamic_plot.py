@@ -134,7 +134,7 @@ def shift_color_map(cmap, vmin, vmid, vmax, name='shiftedcmap'):
         cdict['alpha'].append((si, a, a))
 
     new_cmap = matplotlib.colors.LinearSegmentedColormap(name, cdict)
-    plt.register_cmap(cmap=new_cmap)
+    # plt.register_cmap(cmap=new_cmap)
 
     return new_cmap
 
@@ -241,9 +241,9 @@ def plot(
 		pass
 
 	if geometry_type == "MultiLineString":
-		map_plot = plot_lines(gdf, var, cmap=cmap, colorbar=colorbar, cnorm = cnorm, height=height, width=width, tools=tools, basemap=basemap)
+		map_plot = plot_lines(gdf, var, cmap=cmap, colorbar=colorbar, cnorm=cnorm, height=height, width=width, tools=tools, basemap=basemap, vmin=vmin, vmax=vmax)
 	elif geometry_type == "MultiPolygon":
-		map_plot = plot_polys(gdf, var, cmap=cmap, line_width=line_width, colorbar=colorbar, cnorm = cnorm, height=height, width=width, tools=tools, basemap=basemap, vmin=vmin, vmax=vmax)
+		map_plot = plot_polys(gdf, var, cmap=cmap, line_width=line_width, colorbar=colorbar, cnorm=cnorm, height=height, width=width, tools=tools, basemap=basemap, vmin=vmin, vmax=vmax)
 	else:
 		print(f"Error! Not equipped to handle {geometry_type}.")
 		print("Please ensure your geometries are MultiLineString or MultiPolygon")
@@ -288,15 +288,17 @@ def plot_lines(gdf: gpd.geodataframe.GeoDataFrame, var: str, **kwargs) -> gv.ele
 	Returns:
 		line_map: Polyline map colored by variable of choice plotted on basemap.  
 	'''
-	line_map = gv.Path(gdf, vdims=var).opts(
+	line_map = gv.Path(gdf, vdims=[var]).opts(
 												height = kwargs['height'],
 												width = kwargs['width'],
 												color = var, 
 												colorbar = kwargs['colorbar'],
 												cnorm = kwargs['cnorm'], 
 												cmap = kwargs['cmap'], 
+												clim = (kwargs['vmin'], kwargs['vmax']),
 												title = var, 
-												tools = kwargs['tools'])
+												# tools = kwargs['tools'],
+											)
 
 	return line_map * kwargs['basemap'] 
 
