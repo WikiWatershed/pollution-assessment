@@ -184,7 +184,8 @@ def PlotMaps(df_reach, df_catch,
     r = dp_reach.plot(column=var_reach, lw=1, ax=ax1,
                         norm=lognorm_reach,
                         cmap = colormap)# matplotlib.colors.LogNorm(vmin, vmax), cmap='RdYlGn_r')
-    r_below = dp_reach.plot(lw=1, ax=ax1, color='#D4DADC', alpha=r_alphas)
+    if zoom != False:
+        r_below = dp_reach.plot(lw=1, ax=ax1, color='#D4DADC', alpha=r_alphas)
     
     c = dp_catch.plot(column=var_catch, lw=0.1, ax=ax2, 
                         norm=lognorm_catch,
@@ -280,7 +281,7 @@ def PlotMaps(df_reach, df_catch,
 
     fig.tight_layout(pad=5)
     # plt.savefig('figs/%s%s%s%s_%s.svg' % (cl_name, fa_name, zoom_name, var_reach, var_catch)) # to automatically save - can adjust dpi, etch 
-    # plt.savefig('figs/%s%s%s%s_%s.png' % (cl_name, fa_name, zoom_name, var_reach, var_catch)) # to automatically save - can adjust dpi, etch 
+    plt.savefig('figs/%s%s%s%s_%s.png' % (cl_name, fa_name, zoom_name, var_reach, var_catch)) # to automatically save - can adjust dpi, etch 
     plt.show()
 
 
@@ -461,12 +462,12 @@ def PlotZoom(df_reach, df_catch, var_reach, var_catch, targ_reach, targ_catch, c
     plt.show()
     
 
-def plot_3030_map(naturalland_gdf, nat_protect_type, incl_boundary=False, boundary_gdf=None, ax=None):
+def plot_3030_map(naturalland_gdf, nat_protect_type, incl_boundary=False, boundary_gdf=None):
     nat_protect_types = ['natural', 'protected', 'naturalprotected']
     if nat_protect_type not in nat_protect_types:
         raise ValueError('Invalid nat_protec_type. Expected one of: %s' % nat_protect_types)
         
-    #fig, ax = plt.subplots(figsize=(7,15))
+    fig, ax = plt.subplots(figsize=(7,15))
     
     lon_max, lon_min, lat_max, lat_min, area, h_v = LatLonExtent_FA(list(naturalland_gdf.index), naturalland_gdf)
 
@@ -528,8 +529,6 @@ def plot_3030_map(naturalland_gdf, nat_protect_type, incl_boundary=False, bounda
         ctx.add_basemap(ax, source=ctx.providers.CartoDB.PositronOnlyLabels, crs=naturalland_gdf.crs.to_string(), zoom=9, zorder=2, interpolation='sinc')
     
     plt.show()
-    
-    return(fig)
 
 
 # SINGLE PANE PLOTTING FUNCTIONS
@@ -606,8 +605,8 @@ def add_colorbar(fig, lognorm_geom, colormap='cet_CET_L18'):
                                norm=lognorm_geom)
     cbr2 = fig.colorbar(sm2, cax=cax2,)
     cbr2.ax.minorticks_off()
-    cbr2.ax.tick_params(labelsize=8) 
-
+    cbr2.ax.tick_params(labelsize=8)
+    
 
 def PlotMaps_FA_single_pane(df_geom,
     var_geom, 
@@ -615,9 +614,9 @@ def PlotMaps_FA_single_pane(df_geom,
     geometry,
     colormap='cet_CET_L18', 
     cl=None, cluster_gdf=None, 
-    fa=None, focusarea_gdf=None, 
-    diff=False, include_reach=True,
-                           ):
+    fa=None, focusarea_gdf=None,
+    include_reach=False, streamorder_gdf=None,
+    diff=False):
     '''
     plot maps with focus areas
     '''
@@ -645,7 +644,7 @@ def PlotMaps_FA_single_pane(df_geom,
                       cmap=colormap, alpha=alphas)
         
         if include_reach == True:
-            major_streams = df_geom[df_geom['streamorder'] >= 3].loc[:,('streamorder', 'geom')] 
+            major_streams = streamorder_gdf[streamorder_gdf['streamorder'] >= 3].loc[:,('streamorder', 'geom')] 
 
             rch = major_streams.plot(linewidth=(major_streams['streamorder'] - 1) / 2 , ax=ax1, color='cornflowerblue')
         
@@ -666,9 +665,6 @@ def PlotMaps_FA_single_pane(df_geom,
     if cl != None:
         # Display Cluster Name
         print('Cluster Name = ', cl)
-        # plot cluster
-        # cl_reach = cluster_gdf[cluster_gdf.index == cl].plot(lw=1, ax=ax1, facecolor="none", edgecolor="black", zorder=10)
-        # cl_catch = cluster_gdf[cluster_gdf.index == cl].plot(lw=1, ax=ax2, facecolor="none", edgecolor="black")
 
     # plot focus areas within clusters
     fas_in_cluster = plot_FA_boundaries(focusarea_gdf, ax1, cl=cl, fa=fa)
@@ -701,9 +697,9 @@ def PlotMaps_FA_single_pane(df_geom,
     else:
         fa_name = "FA_"
         
-    # plt.savefig('figs/%s%s%s%s_%s.svg' % (cl_name, fa_name, zoom_name, var_reach, var_catch)) # to automatically save - can adjust dpi, etch 
-    # plt.savefig('figs/%s%s%s%s_%s.png' % (cl_name, fa_name, zoom_name, var_reach, var_catch)) # to automatically save - can adjust dpi, etch 
+    #plt.savefig('figs/%s%s%s%s.svg' % (cl_name, fa_name, var_geom, geometry)) # to automatically save - can adjust dpi, etch 
+    plt.savefig('figs/%s%s%s%s.png' % (cl_name, fa_name, var_geom, geometry)) # to automatically save - can adjust dpi, etch 
     plt.show()
     
-    #return [lon_max, lon_min, lat_max, lat_min]
-    return(ax1)
+    return [lon_max, lon_min, lat_max, lat_min, fig]
+
