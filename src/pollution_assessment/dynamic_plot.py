@@ -183,12 +183,23 @@ def define_colorbar_extremes(gdf: gpd.geodataframe.GeoDataFrame, var: str, diff:
 	    vmax = gdp[var].quantile(0.99)
 	else:
 	    vmin = targ
+	    # Reaches
 	    if geometry_type == "MultiLineString":
 	    	vmid = gdf[var.split('_')[0] + '_conc'].quantile(0.90)
 	    	vmax = gdf[var.split('_')[0] + '_conc'].quantile(0.99)
+	    # NHD Catchments
 	    elif geometry_type == "MultiPolygon":
 	    	vmid = gdf[var.split('_')[0] + '_loadrate'].quantile(0.85)
 	    	vmax = gdf[var.split('_')[0] + '_loadrate'].quantile(0.99)
+	    # HUCs
+	    elif geometry_type == "Polygon":
+	    	try:
+	    		vmid = gdf[var].quantile(0.90)
+	    		vmax = gdf[var].quantile(0.99)
+	    	except:
+	    		vmid = gdf[var].quantile(0.90)
+	    		vmax = gdf[var].quantile(0.99)
+
 
 	print(f'Reach values (min, mid, max) = ({vmin}, {vmid}, {vmax})')    
 	return vmin, vmid, vmax
@@ -255,9 +266,12 @@ def plot(
 	# determine if HUC plot 
 	if gdf.index.name == 'huc12':
 		huc = True
-		var, vmin, vmax, title = huc_var(gdf, var)
-		cnorm = 'linear'
-		gdf = gdf[gdf[var] < vmax]
+		if var in ['protected', 'natural', 'naturalprotected']:
+			var, vmin, vmax, title = huc_var(gdf, var)
+			cnorm = 'linear'
+			gdf = gdf[gdf[var] < vmax]
+		else:
+			pass
 	else:
 		huc = False
 
@@ -265,7 +279,10 @@ def plot(
 	if var not in gdf.columns:
 		print("Invalid Variable. var must be in the list below:")
 		if huc == True:
-			print(['protected', 'natural', 'naturalprotected'])
+			if var in ['protected', 'natural', 'naturalprotected']:
+				print(['protected', 'natural', 'naturalprotected'])
+			else:
+				print(gdf.columns)
 			return
 		else:
 			print(gdf.columns)
@@ -303,15 +320,13 @@ def plot(
 		print("Please ensure your geometries are MultiLineString, MultiPolygon, or Polygon")
 		return
 
-	if added_geom != None:
-		map_plot = map_plot + added_geom
-
-	return map_plot, gdf 
+	return map_plot 
 
 
 def plot_polys(gdf: gpd.geodataframe.GeoDataFrame, var: str, **kwargs) -> gv.element.geo.Polygons:
 	'''
 	Plot polygons in the DRWI (e.g., NHD+ catchments or HUCs)
+	https://towardsdatascience.com/10-examples-to-master-args-and-kwargs-in-python-6f1e8cc30749
 
 	Parameters:
 		gdf:	Pandas geodataframe with MultiPolygon geometry
@@ -325,6 +340,7 @@ def plot_polys(gdf: gpd.geodataframe.GeoDataFrame, var: str, **kwargs) -> gv.ele
 																	height = kwargs['height'],
 																	width = kwargs['width'],
 																	colorbar = kwargs['colorbar'],
+																	color = var,
 																	cmap = kwargs['cmap'],
 																	cnorm = kwargs['cnorm'],
 																	clim = (kwargs['vmin'], kwargs['vmax']),
