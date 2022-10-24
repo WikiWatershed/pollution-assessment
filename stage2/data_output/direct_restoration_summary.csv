@@ -1,0 +1,82 @@
+practice_type,practice_count,area_ac,tn_load_reduced,tp_load_reduced,tss_load_reduced
+Access Control,2,207.1,0.0,0.0,0.0
+Access Road,9,0.0,0.0,0.0,0.0
+Animal Mortality Facility,2,0.0,0.0,0.0,0.0
+Aquatic Organism Passage,1,1.09,0.0,0.0,0.0
+Barnyard Runoff Controls,11,61.07,52.550000000000004,16.19,11715.06
+Bioretention,35,2.03,1059.31,322.24,1235370.6
+Bioretention/raingarden - C/D soils no underdrain,17,0.21,57.11,17.720000000000002,26935.28
+Bioretention/raingardens - A/B soils no underdrain,32,2.92,38.96,7.3,17096.88
+Bioretention/raingardens - C/D soils underdrain,9,4.17,23.96,7.19,29862.100000000002
+Bioswale,10,1.27,12.21,4.17,16167.62
+Cistern,7,0.01,0.0,0.0,0.0
+Comprehensive Nutrient Management Plan,12,1981.64,1310.98,589.45,0.0
+Conservation Cover,20,270.6,418.96999999999997,232.98000000000002,112475.3
+Conservation Easement,2,19483.7,40.14,7.81,7175.63
+Conservation Tillage,13,1568.23,518.57,399.08,448380.52999999997
+Constructed Wetland,2,0.73,85.25999999999999,40.760000000000005,66737.58
+Contour Orchard and Other Perennial Crops,1,3.39,0.0,0.0,0.0
+Cover Crop,108,9976.16,12760.18,6792.9400000000005,3503040.57
+Crop Rotation,1,102.03,0.0,0.0,0.0
+Depaving,1,0.0,0.0,0.0,0.0
+Diversion,9,0.0,0.0,0.0,0.0
+Early Successional Habitat,1,0.44,0.0,0.0,0.0
+Erosion and Sediment Control Level 1,3,0.13,0.0,0.0,0.0
+Fence,30,229.38,2698.62,1468.54,333691.21
+Flow Through Planter,2,0.0,0.0,0.0,0.0
+Forest Buffer,44,518.93,29870.21,6592.08,3597758.81
+Forest Buffer - Narrow,7,266.12,368.76,118.54,107079.90000000001
+Forest Buffer - Streamside with Exclusion Fencing,38,17.94,22647.86,6151.46,12253933.35
+Forest Management Plan,3,20.19,0.0,0.0,0.0
+Grass Buffer - Narrow,5,6.59,419.03,135.28,117014.42
+Grass Buffer - Narrow with Exclusion Fencing,1,45.25,168.24,24.75,1093421.7
+Grass Buffer - Streamside with Exclusion Fencing,2,0.0,2250.03,596.61,529095.26
+Grass Buffers,2,7.38,0.0,0.0,0.0
+Grassed Waterway,28,87.37,445.32000000000005,220.57000000000002,128856.68000000001
+Grazing Land Protection,3,117.43,21.29,8.4,1747.3600000000001
+Green Infrastructure Plan,1,11256.44,0.0,0.0,0.0
+Heavy Use Area Protection,53,54.82,522.26,180.45000000000002,119139.16
+Impervious Surface Reduction,2,0.09,1.13,0.19,793.75
+In-Field Soil Health Assessment,25,1481.9,0.0,0.0,0.0
+"Irrigation System, Microirrigation",2,60.69,0.0,0.0,0.0
+Livestock Pipeline,10,0.73,0.0,0.0,0.0
+Non-Urban Stream Restoration,14,81.6,2669.85,1685.42,526440.71
+Not Specified,7,0.0,0.0,0.0,0.0
+Nutrient Management,7,917.39,560.66,254.70999999999998,0.0
+Obstruction Removal,3,0.01,0.0,0.0,0.0
+Permeable Pavement w/o Sand Veg. - A/B soils no underdrain,3,0.38,4.6899999999999995,0.78,1009.02
+Phosphorous Removal System,1,0.0,0.0,0.0,0.0
+Pollinator Habitat,3,0.34,0.0,0.0,0.0
+Prescribed Grazing,9,337.21,48.379999999999995,23.62,7325.9400000000005
+Pumping Plant,8,0.0,0.0,0.0,0.0
+Rain Barrel,1,0.0,0.0,0.0,0.0
+"Residue and Till Management, No Till",2,9.26,0.0,0.0,0.0
+Riparian Forest Buffer,54,1775.73,3418.62,552.18,463508.35
+Riparian Herbaceous Cover,4,25.71,227.96,42.87,33331.83
+Roof Runoff Management,2,8.39,5.7,1.38,1044.84
+Roof Runoff Structure,34,53.25,185.62,61.89,39675.97
+Roofs and Covers,18,3.09,78.39,27.0,16042.4
+Soil Conservation and Water Quality Plans,42,2715.79,2671.31,977.8700000000001,648268.22
+Sprinkler System (Center Pivot),3,252.78,0.0,0.0,0.0
+Stream Channel Stabilization,2,0.07,34.55,20.73,4180.09
+Stream Crossing,42,0.72,0.0,0.0,1000.0
+Streambank and Shoreline Protection,3,10.14,444.33000000000004,266.6,143024.34
+Terrace,3,0.0,0.0,0.0,0.0
+Trails and Walkways,27,0.87,0.0,0.0,0.0
+Tree Planting,4,1.45,8.04,2.51,1387.27
+Tree and Shrub Establishment,9,144.86,272.15,69.35,45188.37
+Underground Outlet,20,0.0,0.0,0.0,0.0
+Urban Infiltration Practices,2,0.31,2.61,0.53,2007.6599999999999
+Urban Stream Restoration,2,0.26,52.31,44.35,27946.55
+Vegetated Treatment Area,4,1.54,0.0,0.0,0.0
+Waste Facility Closure,5,0.65,0.0,0.0,0.0
+Waste Storage Facility,53,55.73,11662.3,2954.64,0.0
+Waste Storage Pond,1,1.14,594.93,132.51,0.0
+Waste Storage Structure,30,2.25,12199.109999999999,4746.58,0.0
+Waste Transfer,14,0.0,0.0,0.0,0.0
+Watering Facility,16,334.13,163.01999999999998,90.69999999999999,20008.77
+Wet Pond,1,0.2,52.74,26.49,35413.76
+Wetland Creation - Floodplain,1,0.33,0.17,0.08,30.13
+Wetland Restoration,3,10.08,36.44,21.44,12978.44
+Wetland Restoration - Floodplain,1,0.44,0.17,0.04,16.15
+TOTAL,1024,54584.270000000004,111184.99999999999,35938.97000000001,25787317.559999995
