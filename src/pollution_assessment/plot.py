@@ -562,7 +562,7 @@ def plot_FA_boundaries(
 
 
 def add_basemap(
-    ax: plt.Axis,
+    ax: plt.Axes,
     area: float,
     dp_geom: gpd.GeoDataFrame
 ):
