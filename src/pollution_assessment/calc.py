@@ -221,6 +221,48 @@ def add_excess(comid_type: str, gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     return gdf
 
 
+def add_ps(
+    comid_type: str, 
+    gdf: gpd.GeoDataFrame,
+    df_in: pd.DataFrame,
+) -> gpd.GeoDataFrame:
+    """ Add point source pollution columns to the combined 
+    PA2 results GeoDataFrame.
+
+    Args:
+        comid_type: 'reach' or 'catch'
+        gdf: PA2 results GeoDataFrame with geometries for mapping
+        df_in: WikiSRAT results for multiple run groups
+
+    Returns:
+        The input GeoDataFrame with three extra `_ps` columns added .
+    """
+
+    calc_suffix = 'ps'
+
+    if comid_type == 'reach':
+        quantity_type = 'conc'
+        normalize_by = 1
+    elif comid_type == 'catch':
+        quantity_type = 'loadrate'
+        normalize_by = gdf.catchment_hectares
+    else:
+        print("Error: comid_type must be 'reach' or 'catch'")
+
+    df = select_run(comid_type, df_in, run_groups[0], ps=True)
+
+    # Calculate and add each new column by looping through `pollutants` dict
+    for pollutant in pollutants.items():
+        gdf[f'{pollutant[1]}_{quantity_type}_{calc_suffix}'] = (
+            df[f'{pollutant[0]}'] / normalize_by
+        )
+    # Set 'tss_loadrate_xsnps' = 'tss_loadrate_xs', to avoid NaN
+    if comid_type == 'catch':
+        gdf['tss_loadrate_xsnps'] = gdf['tss_loadrate_xs']
+
+    return gdf
+
+
 def add_xsnps(
     comid_type: str, 
     gdf: gpd.GeoDataFrame,
@@ -236,12 +278,11 @@ def add_xsnps(
         comid_type: 'reach' or 'catch'
         gdf: PA2 results GeoDataFrame with geometries for mapping
         df_in: WikiSRAT results for multiple run groups
-        group: Run group name
-        ps: Values derived from point sources (True) or totals from all 
-            sources (False). Defaults to False.
 
     Returns:
-        The input GeoDataFrame with three extra `_xs` columns added .
+        The input GeoDataFrame with three extra `_xsnps` columns added .
+
+    TO DO: Refactor to use results from `add_ps()`
     """
 
     calc_suffix = 'xsnps'
