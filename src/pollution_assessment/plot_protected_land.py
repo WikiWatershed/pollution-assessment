@@ -16,7 +16,9 @@ from pollution_assessment import plot
 # *****************************************************************************
 
 # Create label series for DRWI bar charts
-def bar_labels(bar_values: pd.Series) -> pd.Series:
+def bar_labels(
+    bar_values: pd.Series
+) -> pd.Series:
     """ Create a series of labels for bar charts. Excluding any zero values
     
     Args:
@@ -31,8 +33,11 @@ def bar_labels(bar_values: pd.Series) -> pd.Series:
 
 
 # Sort focus areas by natural land levels
-def sort_nat_levels(natland_gdf: gpd.GeoDataFrame, low_bound: float = 30,
-                    high_bound: float = 55) -> list:
+def sort_nat_levels(
+    natland_gdf: gpd.GeoDataFrame,
+    low_bound: float = 30,
+    high_bound: float = 55
+) -> list:
     """ Sort focus areas into three degrees of natural land cover based on user 
     specified bounds.
     
@@ -57,7 +62,10 @@ def sort_nat_levels(natland_gdf: gpd.GeoDataFrame, low_bound: float = 30,
 
 
 # Single panel bar chart of natural land
-def plot_natural(sorted_gdf: gpd.GeoDataFrame, legend_loc: str, anchor: list):
+def plot_natural(
+    sorted_gdf: gpd.GeoDataFrame,
+    legend_loc: str, anchor: list
+):
     """ Plot a barchart of natural lands in a dataframe.
     
     Args: 
@@ -109,7 +117,11 @@ def plot_natural(sorted_gdf: gpd.GeoDataFrame, legend_loc: str, anchor: list):
 
     
 # Create bar chart of natural lands and protection practices broken down by cluster
-def plot_natural_cluster(fa_gdf: gpd.GeoDataFrame, legend_loc: str, anchor: list):
+def plot_natural_cluster(
+    fa_gdf: gpd.GeoDataFrame,
+    legend_loc: str,
+    anchor: list
+):
     """ Plot a barchart of natural lands in a cluster.
     
     Args: 
@@ -154,8 +166,13 @@ def plot_natural_cluster(fa_gdf: gpd.GeoDataFrame, legend_loc: str, anchor: list
     
 
 # Create bar chart of natural lands and protection practices broken down by natural land level
-def plot_natural_level(fa_gdf: gpd.GeoDataFrame, legend_loc: str, anchor: list,
-                      nat_low_bound: float = 30, nat_high_bound: float = 55):
+def plot_natural_level(
+    fa_gdf: gpd.GeoDataFrame,
+    legend_loc: str,
+    anchor: list,
+    nat_low_bound: float = 30,
+    nat_high_bound: float = 55
+):
     """ Plot a barchart of natural lands in a a given natural land level (high, 
     medium, or low.
     
