@@ -801,7 +801,7 @@ def plot_remaining_work(
                     labelleft=False)
     
     # Add title
-    plt.title(f'Percent Remaining to Meet Protection of {threshold}% Natural Land')
+    plt.title(f'Percent of Protected Natural Land in HUC 12s where \n{threshold}% Natural Land Threshold is Possible')
 
     # Add colorbar
     cax = fig.add_axes([0.78, 0.13, 0.03, 0.732])
