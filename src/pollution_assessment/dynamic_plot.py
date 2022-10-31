@@ -68,8 +68,11 @@ def prep_gdf(gdf: gpd.geodataframe.GeoDataFrame) -> gpd.geodataframe.GeoDataFram
 		gdf_final: 	Pandas geodataframe with all necessary requirements for Geoviews plotting
 	'''
 	gdf_proj = project_gdf(gdf)
-	gdf_renamed = rename_geometry_column(gdf_proj)
-	gdf_final = remove_invalid_geometry(gdf_renamed)
+	if 'geometry' not in gdf_proj.columns:
+		gdf_proj = rename_geometry_column(gdf_proj)
+	else:
+		pass
+	gdf_final = remove_invalid_geometry(gdf_proj)
 	return gdf_final
 
 def normalize_data(data: np.array) -> np.array:
