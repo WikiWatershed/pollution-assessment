@@ -1,12 +1,13 @@
 practice_type,practice_count,area_ac,tn_load_reduced,tp_load_reduced,tss_load_reduced
 Animal Waste Management System,1,0.0,0.0,0.0,0.0
-Barnyard Runoff Control,5,0.84,0.0,0.0,0.0
+Barnyard Runoff Control,6,0.76,0.0,0.0,0.0
 "Bioretention/rain gardens - A/B soils, no underdrain",1,0.07,0.0,0.0,0.0
 Bioretention/raingarden - C/D soils no underdrain,1,0.01,0.0,0.0,0.0
-Conservation Cover,4,19.38,4.529999999999999,2.26,1139.29
+Conservation Cover,4,19.38,7.699999999999999,3.4699999999999998,1492.81
 Conservation easement,25,3427.71,0.0,0.0,0.0
 Cover Crop,24,4932.02,0.0,0.0,0.0
 Dry Extended Detention Ponds,1,0.59,0.0,0.0,0.0
+Erosion and Sediment Control Level 1,1,0.11,0.0,0.0,0.0
 Fee acquisition,19,5455.92,0.0,0.0,0.0
 Forest Buffer,7,63.43,988.74,101.13999999999999,50925.83
 Forest Buffer - Narrow,2,2.24,0.0,0.0,0.0
@@ -19,15 +20,15 @@ Not Specified,2,0.0,0.0,0.0,0.0
 Nutrient Management Plan,1,154.01,0.0,0.0,0.0
 Off Stream Watering Without Fencing,1,0.01,0.0,0.0,0.0
 "Residue and Tillage Management, No Till",3,485.81,0.0,0.0,0.0
-Riparian Forest Buffer,5,8.8,1.9500000000000002,0.41000000000000003,197.43
+Riparian Forest Buffer,5,8.8,47.07,10.99,4963.46
 Soil Conservation and Water Quality Plans,1,75.68,0.0,0.0,0.0
-Trails and Walkways,3,0.02,0.0,0.0,3000.0
+Trails and Walkways,3,0.27,0.0,0.0,1000.0
 Tree Planting,1,0.0,0.0,0.0,0.0
 Tree and Shrub Establishment,2,8.0,0.0,0.0,0.0
 Urban Stream Restoration,3,12.15,0.0,0.0,0.0
 Wetland Creation - Floodplain,1,5.31,0.22,0.12,77.05
 Wetland Enhancement,4,40.82,0.0,0.0,0.0
 Wetland Restoration,10,32.41,87.75999999999999,46.94,31011.379999999997
-Wetland Restoration - Floodplain,5,7.96,6.130000000000001,4.46,2713.71
+Wetland Restoration - Floodplain,5,7.96,36.370000000000005,19.52,7605.15
 Wetland Restoration - Headwater,1,8.72,0.0,0.0,0.0
-TOTAL,144,14806.009999999998,1706.3600000000001,525.5400000000001,174394.11
+TOTAL,146,14806.289999999997,1784.8899999999999,552.39,182405.09999999998

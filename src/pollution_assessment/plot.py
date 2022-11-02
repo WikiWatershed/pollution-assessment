@@ -884,7 +884,7 @@ def plot_protec_nat(
                     labelleft=False)
     
     # Add title
-    plt.title(title)
+    plt.title(title, fontsize=14)
 
     # Add colorbar
     cax = fig.add_axes([0.78, 0.13, 0.03, 0.732])
