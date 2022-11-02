@@ -61,7 +61,7 @@ class drwiBmps:
         for id in self._r_practice_ids:
             print(
                 'Practice {} of {} ID: {}'.format(c + 1, len(self._r_practice_ids), id),
-                end='' '',
+                end=' ',
             )
             # if c == 20:
             #     break

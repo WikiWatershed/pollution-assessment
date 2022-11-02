@@ -193,11 +193,13 @@ class TimeoutHTTPAdapter(HTTPAdapter):
             kwargs["timeout"] = self.timeout
         return super().send(request, **kwargs)
 
+
 retry_strategy = Retry(
-    total=5,
+    total=10,
     backoff_factor=1,
     status_forcelist=[413, 429, 500, 502, 503, 504],
-    method_whitelist=["HEAD", "GET", "PUT", "DELETE", "OPTIONS", "TRACE"],
+    allowed_methods=["HEAD", "GET", "PUT", "DELETE", "OPTIONS", "TRACE"],
+    raise_on_status=True,
 )
 adapter = TimeoutHTTPAdapter(max_retries=retry_strategy)
 # create a request session
@@ -206,9 +208,7 @@ srat_session.verify = True
 # mount the session for all requests, attaching the timeout/retry adapter
 srat_session.mount("https://", adapter)
 srat_session.mount("http://", adapter)
-srat_session.headers.update(
-            {"x-api-key": wiki_srat_key}
-        )
+srat_session.headers.update({"x-api-key": wiki_srat_key})
 
 # from https://github.com/WikiWatershed/model-my-watershed/blob/31566fefbb91055c96a32a6279dac5598ba7fc10/src/mmw/apps/modeling/tasks.py#L375-L409
 def run_srat(gwlfe_watereshed_result, with_attenuation, restoration_sources):
