@@ -49,14 +49,29 @@ targets = {
                    'conc_target': tss_conc_target}
           }
 
+funding_sources = [
+    'Delaware River Restoration Fund', 
+    'Delaware River Operational Fund', 
+    'Delaware Watershed Conservation Fund',
+    'PADEP', 
+    'NJDEP',
+    'Delaware River Watershed Protection Fund - Forestland Capital Grants',
+]
 
-# Run Groups
 run_groups = {
     0: 'No restoration or protection', 
     1: 'Direct WPF Restoration', 
     2: 'Direct and Indirect WPF Restoration', 
     3: 'All Restoration', 
     4: 'Direct WPF Protection'
+}
+
+run_group_sources = {
+    0: [],
+    1: funding_sources[0],
+    2: funding_sources[0:3],
+    3: funding_sources[0:5],
+    4: funding_sources[-1],
 }
 
 comid_test_dict = {
