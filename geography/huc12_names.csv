@@ -1,0 +1,575 @@
+Hydrologic Unit Code 12-Digit (HUC12),HUC12 Name
+20401010101,Town Brook-Headwaters West Brach Delaware River
+20401010102,Betty Brook-Headwaters West Brach Delaware River
+20401010103,Rose Brook-Headwaters West Brach Delaware River
+20401010104,Elk Creek-Headwaters West Brach Delaware River
+20401010105,Upper Little Delaware River
+20401010106,Wright Brook-Headwaters West Brach Delaware River
+20401010201,Platner Brook-Upper West Branch Delaware River
+20401010202,Bagley Brook-Upper West Branch Delaware River
+20401010203,East Brook
+20401010204,Mallory Brook-Upper West Branch Delaware River
+20401010205,Beers Brook-Middle West Branch Delaware River
+20401010206,Upper Trout Creek
+20401010207,Cannonsville Reservoir
+20401010301,East Branch Cold Spring Creek
+20401010302,Upper Oquaga Creek
+20401010303,Lower Oquaga Creek
+20401010304,Big Hollow-Lower West Branch Delaware River
+20401010305,Sherman Creek-Lower West Branch Delaware River
+20401010306,Sands Creek
+20401010307,Balls Creek-Lower West Branch Delaware River
+20401010403,Factory Creek-Delaware River
+20401010404,Basket Creek
+20401010406,Pea Brook-Delaware River
+20401010501,Hankins Creek-Delaware River
+20401010502,North Branch Callicoon Creek
+20401010503,Upper East Branch Callicoon Creek
+20401010504,Middle East Branch Callicoon Creek
+20401010505,Lower East Branch Callicoon Creek
+20401010506,Beaverdam Creek-Delaware River
+20401010603,Tenmile River
+20401010604,Peggy Run-Delaware River
+20401010606,Westcolang Creek-Delaware River
+20401020101,Little Beaver Kill
+20401020102,Upper Willowemoc Creek
+20401020103,Middle Willowemoc Creek
+20401020104,Lower Willowemoc Creek
+20401020201,Upper Beaver Kill
+20401020202,Middle Beaver Kill
+20401020203,Tennanah Lake-Trout Brook
+20401020204,Lower Beaver Kill
+20401020301,Batavia Kill
+20401020302,Pleasant Valley Brook-East Branch Delaware River
+20401020303,Vly Creek-Bush Kill
+20401020304,Dry Brook
+20401020305,Platte Kill
+20401020306,Huckleberry Brook-East Branch Delaware River
+20401020401,Mill Brook - 20401020401
+20401020402,Tremper Kill-Pepacton Reservoir
+20401020403,Upper Pepacton Reservoir
+20401020404,Murphy Hill Brook-Pepacton Reservoir
+20401020405,Lower Pepacton Reservoir
+20401020501,Wilson Hollow Brook-Downs Brook
+20401020502,Trout Brook-East Branch Delaware River
+20401020503,Baxter Brook-East Branch Delaware River
+20401020504,Read Creek
+20401020505,Fish Creek-East Branch Delaware River
+20401020506,Cadosia Creek
+20401020507,Peas Eddy Brook-East Branch Delaware River
+20401040101,Middle Mongaup River
+20401040102,East Mongaup River
+20401040103,West Branch Mongaup River
+20401040104,Swinging Bridge Reservoir-Mongaup River
+20401040105,Black Lake Creek
+20401040106,Black Brook
+20401040107,Rio Reservoir-Mongaup River
+20401040201,Gumaer Brook-Basher Kill
+20401040202,Pine Kill
+20401040203,Basher Kill
+20401040301,West Branch Neversink River
+20401040302,East Branch Neversink River
+20401040303,Neversink Reservoir
+20401040304,Sheldrake Stream
+20401040305,Upper Neversink River
+20401040306,Turner Brook-Bush Kill
+20401040307,Middle Neversink River
+20401040308,Lower Neversink River
+20401040501,Beaver Brook - 20401040501
+20401040502,Halfway Brook
+20401040503,Mill Brook - 20401040503
+20401040504,Twin Lakes Creek-Delaware River
+20401040505,Shingle Kill-Delaware River
+20401040704,Shimers Brook-Delaware River
+20401040705,Hornbecks Creek-Delaware River
+20401041001,Little Flat Brook
+20401041002,Big Flat Brook
+20401041003,Flat Brook
+20401041005,Vancampens Brook-Delaware River
+20401050101,Headwaters Paulins Kill River
+20401050102,Upper Paulins Kill River
+20401050103,Middle Paulins Kill River
+20401050104,Lower Paulins Kill River
+20401050201,Upper Pequest River
+20401050202,Middle Pequest River
+20401050203,Beaver Brook - 20401050203
+20401050204,Lower Pequest River
+20401050401,Upper Pohatcong Creek
+20401050402,Lower Pohatcong Creek
+20401050501,Lake Hopatcong-Upper Musconetcong River
+20401050502,Lubbers Run-Musconetcong River
+20401050503,Middle Musconetcong River
+20401050504,Lower Musconetcong River
+20401050601,Allegheny Creek-Delaware River
+20401050603,Buckhorn Creek-Delaware River
+20401050605,Lopatcong Creek-Delaware River
+20401050801,Upper Assunpink Creek
+20401050802,Miry Run
+20401050803,Lower Assunpink Creek
+20401050901,Hakihokake Creek-Delaware River
+20401050902,Nishisakawick Creek-Delaware River
+20401050904,Harihokake Creek-Delaware River
+20401050905,Lockatong Creek-Delaware River
+20401050906,Wickecheoke Creek-Delaware River
+20401050907,Alexauken Creek-Delaware River
+20401050908,Paunnacussing Creek-Delaware River
+20401050909,Pidcock Creek-Delaware River
+20401050910,Jacobs Creek-Delaware River
+20401050911,Buck Creek-Delaware River
+20402010101,Jumping Brook
+20402010102,Upper Crosswicks Creek
+20402010103,Middle Crosswicks Creek
+20402010104,Doctors Creek
+20402010105,Lower Crosswicks Creek
+20402010401,Blacks Creek
+20402010402,Crafts Creek
+20402010404,Van Sciver Lake-Delaware River
+20402010406,Assiscunk Creek
+20402010407,Burlington Island-Delaware River
+20402020101,Headwaters Mount Misery Brook
+20402020102,Mount Misery Brook
+20402020103,Gaunts Brook-North Branch Rancocas Creek
+20402020104,Powells Run-North Branch Rancocas Creek
+20402020201,Friendship Creek
+20402020202,Barton Run-Southwest Branch Rancocas Creek
+20402020203,Little Creek-Southwest Branch Rancocas Creek
+20402020204,Jade Run-South Branch Rancocas Creek
+20402020302,Rancocas Creek
+20402020305,Swede Run-Delaware River
+20402020401,Pennsauken Creek
+20402020403,Pompeston Creek-Delaware River
+20402020404,Cooper River
+20402020405,Petty Island-Delaware River
+20402020501,North Branch Big Timber Creek
+20402020502,South Branch Big Timber Creek
+20402020503,Big Timber Creek
+20402020506,Manuta Creek
+20402020507,Woodbury Creek-Delaware River
+20402020606,Raccoon Creek
+20402020607,Repaupo Creek-Delaware River
+20402020608,Oldmans Creek-Delaware River
+20402040000,Delaware Bay-Deep
+20402060101,Game Creek
+20402060102,Upper Salem River
+20402060103,Salem Canal-Whooping John Creek
+20402060104,Mannington Creek
+20402060105,Mill Creek-Miles Creek
+20402060106,Lower Salem River
+20402060201,Upper Alloway Creek
+20402060202,Middle Alloway Creek
+20402060203,Lower Alloway Creek
+20402060301,Upper Cohansey River
+20402060302,Middle Cohansey River
+20402060303,Lower Cohansey River
+20402060401,Scotland Run
+20402060402,Reed Branch-Still Run
+20402060403,Upper Muddy Run
+20402060404,Lower Muddy Run
+20402060405,Burnt Mill Branch-Maurice River
+20402060501,Mill Creek
+20402060502,Union Lake-Maurice River
+20402060503,Manantico Creek
+20402060504,Buckshutem Creek
+20402060505,White Marsh Run-Maurice River
+20402060506,Manumuskin River
+20402060507,Muskee Creek-Maurice River
+20402060601,Upper Stow Creek
+20402060602,Mad Horse Creek-Delaware Bay
+20402060603,Lower Stow Creek
+20402060604,Back Creek
+20402060605,Dividing Creek-Oranoaken Creek
+20402060701,Fishing Creek-Delaware Bay
+20402060702,Dennis Creek
+20402060703,West Creek-Delaware Bay
+20403010101,Upper Manasquan River
+20403010102,Middle Manasquan River
+20403010103,Poplar Brook-Sandy Hook-Atlantic Ocean
+20403010104,Shark River-Atlantic Ocean
+20403010105,Lower Manasquan River-Atlantic Ocean
+20403010201,North Branch Metedeconk River
+20403010202,South Branch Metedeconk River
+20403010203,Cedar Bridge Branch-Metedeconk River
+20403010301,Upper Toms River
+20403010302,Ridgeway Branch
+20403010303,Union Branch
+20403010304,Wrangle Brook
+20403010305,Middle Toms River
+20403010306,Lower Toms River
+20403010401,Kettle Creek
+20403010402,Upper Cedar Creek
+20403010403,Lower Cedar Creek
+20403010404,Silver Bay-Barnegat Bay
+20403010405,Forked River-Barnegat Bay
+20403010406,Gunning River-Barnegat Bay
+20403010407,Oyster Creek-Barnegat Bay
+20403010501,Upper Oswego River
+20403010502,Lower Oswego River
+20403010503,Upper Wading River
+20403010504,Middle Wading River
+20403010505,Lower Wading River
+20403010601,Springers Brook
+20403010602,Sleeper Branch
+20403010603,Upper Mullica River
+20403010604,Nescochague Creek
+20403010605,Batsto River
+20403010606,Middle Mullica River
+20403010607,Landing Creek
+20403010608,Bass River
+20403010609,Nacote Creek
+20403010610,Lower Mullica River
+20403010701,Mill Creek-Manahawkin Bay
+20403010702,Westecunk Creek
+20403010703,Cedar Run-Manhawkin Bay
+20403010704,Tuckerton Creek-Little Egg Harbor
+20403010705,Great Bay
+20403010800,Atlantic Ocean-Deep
+20403020101,Fourmile Branch-Great Egg Harbor River
+20403020102,Upper Hospitality Branch
+20403020103,Collings Lake-Hospitality Branch
+20403020104,Lower Hospitality Branch
+20403020105,Penny Pot Stream
+20403020106,Squankum Branch-Great Egg Harbor River
+20403020107,Deep Run
+20403020108,Indian Branch-Great Egg Harbor River
+20403020201,Makepeace Stream-Great Egg Harbor River
+20403020202,Babcock Creek-Great Egg Harbor River
+20403020203,South River North
+20403020204,Stephen Creek-Great Egg Harbor River
+20403020205,English Creek-Great Egg Harbor River
+20403020301,Upper Tuckahoe River
+20403020302,Middle Tuckahoe River
+20403020303,Lower Tuckahoe River
+20403020304,Cedar Swamp Creek
+20403020401,Absecon Creek
+20403020402,Patcong Creek
+20403020403,Absecon Bay
+20403020404,Cape May Harbor-Cape May Inlet
+20403020405,Great Channel-Hereford Inlet
+20403020406,Townsend Channel-Townsends Inlet
+20403020407,Corson Inlet-Ludlam Bay
+20403020408,Great Egg Harbor Bay-Great Egg Harbor Inlet
+20403020500,Great Egg Harbor Bay-Atlantic Ocean Deep
+20403030602,Atlantic Ocean
+20401010305,Sherman Creek-Lower West Branch Delaware River
+20401010307,Balls Creek-Lower West Branch Delaware River
+20401010401,Upper Equinunk Creek
+20401010402,Lower Equinunk Creek
+20401010403,Factory Creek-Delaware River
+20401010405,Little Equinunk Creek
+20401010406,Pea Brook-Delaware River
+20401010501,Hankins Creek-Delaware River
+20401010506,Beaverdam Creek-Delaware River
+20401010601,North Branch Calkins Creek
+20401010602,South Branch Calkins Creek
+20401010604,Peggy Run-Delaware River
+20401010605,Masthope Creek
+20401010606,Westcolang Creek-Delaware River
+20401030101,Johnson Creek
+20401030102,Van Auken Creek
+20401030103,Belmont Lake-West Branch Lackawaxen River
+20401030201,East Branch Dyberry Creek
+20401030202,West Branch Dyberry Creek
+20401030203,Big Brook-Dyberry Creek
+20401030301,Upper Middle Creek
+20401030302,Lower Middle Creek
+20401030401,Jones Creek
+20401030402,Butternut Creek-West Branch Wallenpaupack Creek
+20401030501,Bridge Creek
+20401030502,East Branch Wallenpaupack
+20401030503,Headwaters Wallenpaupack Creek
+20401030504,Ariel Creek
+20401030505,Lake Wallenpaupack-Wallenpaupack Creek
+20401030601,Carley Brook-Lackawaxen River
+20401030602,Blooming Grove Creek
+20401030603,Lackawaxen River-Delaware River
+20401040401,Upper Shahola Creek
+20401040402,Middle Shahola Creek
+20401040403,Lower Shohola Creek
+20401040504,Twin Lakes Creek-Delaware River
+20401040505,Shingle Kill-Delaware River
+20401040601,Brights Creek
+20401040602,Upper Bush Kill
+20401040603,Middle Bush Kill
+20401040604,Saw Creek
+20401040605,Little Bush Kill
+20401040606,Lower Bush Kill
+20401040701,Sawkill Creek
+20401040702,Raymondskill Creek
+20401040703,Dingmans Creek
+20401040704,Shimers Brook-Delaware River
+20401040705,Hornbecks Creek-Delaware River
+20401040801,Upper McMichael Creek
+20401040802,Appenzell Creek
+20401040803,Upper Pocono Creek
+20401040804,Lower Pocono Creek
+20401040805,Lower McMichael Creek
+20401040901,Upper Broadhead Creek
+20401040902,Paradise Creek
+20401040903,Middle Broadhead Creek
+20401040904,Marshalls Creek
+20401040905,Lower Broadhead Creek
+20401041004,Cherry Creek
+20401041005,Vancampens Brook-Delaware River
+20401050301,Little Bushkill Creek
+20401050302,Upper Bushkill Creek
+20401050303,Lower Bushkill Creek
+20401050601,Allegheny Creek-Delaware River
+20401050602,Martins Creek-Delaware River
+20401050603,Buckhorn Creek-Delaware River
+20401050604,Cooks Creek-Delaware River
+20401050605,Lopatcong Creek-Delaware River
+20401050701,Upper Tohickon Creek
+20401050702,Middle Tohickon Creek
+20401050703,Lower Tohickon Creek
+20401050903,Tinicum Creek-Delaware River
+20401050904,Harihokake Creek-Delaware River
+20401050908,Paunnacussing Creek-Delaware River
+20401050909,Pidcock Creek-Delaware River
+20401050910,Jacobs Creek-Delaware River
+20401050911,Buck Creek-Delaware River
+20401060101,Stillwater Lake-Upper Tunkhannock Creek
+20401060102,Pocono Lake Dam-Tobyhanna Creek
+20401060103,Tunkhannock Creek
+20401060104,Tobyhanna Creek-Lehigh River
+20401060201,Headwaters Lehigh River
+20401060202,Brady's Lake-Trout Creek
+20401060203,Bear Creek - 20401060203
+20401060204,Wright Creek-Lehigh River
+20401060301,Black Creek-East Side of Lehigh River
+20401060302,Sandy Run
+20401060303,Mud Run
+20401060304,Stony Creek-Lehigh River
+20401060305,Hazle Creek
+20401060306,Quakake Creek
+20401060307,Beaver Creek-Black Creek
+20401060308,Nesquehoning Creek
+20401060309,Mahoning Creek
+20401060310,Mauch Chunk Creek-Lehigh River
+20401060401,Middle Creek
+20401060402,Headwaters Pohopoco Creek
+20401060403,Wild Creek
+20401060404,Beltzville Lake-Pohopoco Creek
+20401060501,Buckwha Creek
+20401060502,Aquashicola Creek-Lehigh River
+20401060601,Upper Jordan Creek
+20401060602,Lower Jordan Creek
+20401060701,Spring Creek
+20401060702,Liebert Creek-Little Lehigh Creek
+20401060703,Little Lehigh Creek-Lehigh River
+20401060801,Lizard Creek
+20401060802,Trout Creek
+20401060803,Bertsch Creek
+20401060804,Fireline Creek-Lehigh River
+20401060805,Indian Creek
+20401060806,Hokendauqua Creek
+20401060807,Coplay Creek
+20401060808,Catasauqua Creek
+20401060809,East Branch Monocacy Creek
+20401060810,Monocacy Creek
+20401060811,Saucon Creek
+20401060812,Nancy Run
+20401060813,Lehigh River-Delaware River
+20402010201,North Branch Neshaminy Creek
+20402010202,West Branch Neshaminy Creek
+20402010203,LIttle Neshaminy Creek
+20402010204,Cooks Run-Neshaminy Creek
+20402010301,Mill Creek-Neshaminy Creek
+20402010302,Ironworks Creek-Mill Creek
+20402010303,Core Creek-Neshaminy Creek
+20402010403,Martins Creek
+20402010404,Van Sciver Lake-Delaware River
+20402010405,Mill Creek-Silver Lake
+20402010407,Burlington Island-Delaware River
+20402020301,Poquessing Creek
+20402020303,Upper Pennypack Creek
+20402020304,Lower Pennypack Creek
+20402020305,Swede Run-Delaware River
+20402020402,Tacony Creek-Frankford Creek
+20402020403,Pompeston Creek-Delaware River
+20402020405,Petty Island-Delaware River
+20402020504,Cobbs Creek
+20402020505,Darby Creek
+20402020507,Woodbury Creek-Delaware River
+20402020601,Crum Creek
+20402020602,Ridley Creek
+20402020603,East Branch Chester Creek
+20402020604,West Branch Chester Creek
+20402020605,Chester Creek
+20402020607,Repaupo Creek-Delaware River
+20402020608,Oldmans Creek-Delaware River
+20402030101,Headwaters Little Schuylkill River
+20402030102,Upper Little Schuylkill River
+20402030103,Lower Little Schuylkill River
+20402030201,Eisenhuth Reservoir-Mill Creek
+20402030202,West Branch Schuylkill River
+20402030203,East Branch Schuylkill River
+20402030204,Headwaters Schuylkill River
+20402030205,Deer Lake-Pine Creek
+20402030206,Bear Creek - 20402030206
+20402030207,Mahannon Creek-Schuylkill River
+20402030301,Ontelaunee Creek
+20402030302,Pine Creek
+20402030303,Eagle Point-Mill Creek
+20402030304,Sacony Creek
+20402030305,Upper Maiden Creek
+20402030306,Willow Creek
+20402030307,Lower Maiden Creek
+20402030401,Mill Creek
+20402030402,Headwaters Tulpehocken Creek
+20402030403,Upper Tulpehocken Creek
+20402030404,Little Northkill Creek
+20402030405,Northkill Creek
+20402030406,Spring Creek
+20402030407,Middle Tulpehocken Creek
+20402030408,Cacoosing Creek
+20402030409,Lower Tulpehocken Creek
+20402030501,Upper Manatawny Creek
+20402030502,Ironstone Creek
+20402030503,Lower Manatawny Creek
+20402030601,Hassler Run-Mill Creek
+20402030602,Irish Creek
+20402030603,Pigeon Creek-Schuylkill River
+20402030604,Laurel Run-Schuylkill River
+20402030605,Wyomissing Creek
+20402030606,Green Hills Lake-Allegheny Creek
+20402030607,Antietam Creek
+20402030608,Hay Creek
+20402030609,Angelica Creek-Schuylkill River
+20402030610,Monocacy Creek
+20402030611,Sixpenny Creek-Schuylkill River
+20402030701,Upper French Creek
+20402030702,Lower French Creek
+20402030801,Hosensack Creek
+20402030802,West Branch Perkiomen Creek
+20402030803,Macoby Creek
+20402030804,Unami Creek
+20402030805,Swamp Creek
+20402030806,Upper Perkiomen Creek
+20402030807,East Branch Perkiomen Creek
+20402030808,Skippack Creek
+20402030809,Lower Perkiomen Creek
+20402030901,Upper Wissahickon Creek
+20402030902,Lower Wissahickon Creek
+20402031001,Pigeon Creek
+20402031002,Sprogles Run-Schuylkill River
+20402031003,Pickering Creek
+20402031004,Little Valley Creek-Valley Creek
+20402031005,Stony Creek
+20402031006,Mingo Creek-Schuylkill River
+20402031007,Plymouth Creek-Schuylkill River
+20402031008,City of Philadelphia-Schuylkill River
+20402040000,Delaware Bay-Deep
+20402050101,Marsh Creek
+20402050102,Beaver  Creek
+20402050103,Upper East Branch Brandywine Creek
+20402050104,Valley Creek
+20402050105,Lower East Branch Brandywine Creek
+20402050201,Sucker Run
+20402050202,Upper West Branch Brandywine Creek
+20402050203,Doe Run
+20402050204,Buck Run
+20402050205,Lower West Branch Brandywine Creek
+20402050301,Middle Branch White Clay Creek
+20402050302,West Branch White Clay Creek
+20402050303,East Branch White Clay Creek
+20402050304,West Branch Red Clay Creek
+20402050305,East Branch Red Clay Creek
+20402050306,Upper White Clay Creek
+20402050307,Red Clay Creek
+20402050308,Lower White Clay Creek
+20402050401,Upper Brandywine Creek
+20402050402,Middle Brandywine Creek
+20402050403,Lower Brandywine Creek
+20402050501,Muddy Run
+20402050502,Upper Christina River
+20402050503,Middle Christina River
+20402050504,Little Mill Creek
+20402050505,Lower Christina River
+20402050601,Stoney Creek
+20402050602,Matson Run-Shellpot Creek
+20402050701,Broad Duke Canal-Delaware River
+20402050702,Army Creek-Delaware River
+20402050703,Red Lion Creek-Delaware River
+20402050704,Dragon Creek-Delaware River
+20402050705,C&D Canal East-Delaware River
+20402050801,Augustine Creek
+20402050802,Drawyer Creek-Appoquinimink River
+20402050803,Blackbird Creek
+20402060103,Salem Canal-Whooping John Creek
+20402060105,Mill Creek-Miles Creek
+20402060106,Lower Salem River
+20402060203,Lower Alloway Creek
+20402060602,Mad Horse Creek-Delaware Bay
+20402070101,Duck Creek
+20402070102,Smryna River
+20402070103,Cedar Swamp-Delaware Bay
+20402070201,Upper Leipsic River
+20402070202,Lower Lepsic River
+20402070203,Duck Creek-Delaware Bay
+20402070204,Simons River-Delaware Bay
+20402070205,Little River-Delaware Bay
+20402070301,Upper Saint Jones River
+20402070302,Issac Branch
+20402070303,Tidbury Creek
+20402070304,Lower Saint Jones River
+20402070401,Spring Branch-Murderkill River
+20402070402,Browns Branch
+20402070403,Spring  Creek
+20402070404,Ash Gut-Murderkill River
+20402070405,Murderkill River-Town of South Bowers
+20402070406,Brockonbridge Gut-Delaware Bay
+20402070501,Upper Mispillion River
+20402070502,Upper Cedar Creek
+20402070503,Middle Mispillion River
+20402070504,Slaughter Creek
+20402070505,Lower Cedar Creek
+20402070506,Lower Missipillion River
+20402070507,Grecos Canal-Delaware Bay
+20402070601,Round Pole Branch-Broadkill River
+20402070602,Primehook Creek
+20402070603,Beaverdam Creek-Broadkill River
+20402070604,Canary Creek-Broadkill River
+20402070605,Breakwater Harbor-Delaware Bay
+20403030101,Wolfe Glade-Rehoboth Canal
+20403030102,Love Creek-Rehoboth Bay
+20403030103,Herring Creek-Rehoboth Bay
+20403030104,Rehoboth Canal-Rehoboth Bay
+20403030201,Long Drain Ditch-Betts Pond
+20403030202,Cow Bridge Branch-Indian River
+20403030203,Swan Creek-Indian River
+20403030204,Vines Creek-Indian River
+20403030205,White Creek-Indian River Bay
+20403030206,Indian River Bay-Indian River Inlet
+20403030301,Little Assawoman Bay
+20403030302,St. Martin River
+20403030303,Assawoman Bay
+20403030304,Isle of Wight Bay
+20403030401,Newport Bay
+20403030402,Sinepuxent Bay
+20403030403,Robins Creek-Chincoteague Bay
+20403030501,Calfpen Bay-Chincoteague Bay
+20403030502,Swans Gut Creek-Chincoteague Bay
+20403030503,Assateague Channel
+20403030504,Chincoteague Inlet-Chincoteague Bay
+20403030601,Delaware and Maryland Coastal Area-Atlantic Ocean
+20403030602,Atlantic Ocean
+20403030603,Assateague Island-Atlantic Ocean
+20403030604,020403030604-Atlantic Ocean
+20403030605,020403030605-Atlantic Ocean
+20403040101,Assawoman Inlet
+20403040102,Gargathy Inlet
+20403040103,Metompkin Inlet
+20403040104,Wachapreague Inlet
+20403040201,Quinby Inlet
+20403040202,Machipongo River
+20403040203,Great Machipongo Inlet
+20403040301,Mockhorn Bay-The Thorofare
+20403040302,Sand Shoal Channel
+20403040303,South Bay
+20403040304,Smith Island Inlet-The Thorofare
+20403040401,Metompkin Island-Atlantic Ocean
+20403040402,Parramore Island-Atlantic Ocean
+20403040403,020403040403-Atlantic Ocean
+20403040404,Lower Eastern Shore-Atlantic Ocean
+20403040501,Rudee Inlet-Atlantic Ocean
+20403040502,020403040502-Atlantic Ocean

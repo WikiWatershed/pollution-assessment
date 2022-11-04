@@ -10,6 +10,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import AxesGrid
 hv.extension("bokeh")
+from bokeh.models import HoverTool
 
 warnings.filterwarnings('ignore', message='.*Iteration over multi-part geometries is deprecated and will be removed in Shapely 2.0. Use the `geoms` property to access the constituent parts of a multi-part geometry*')
 
@@ -67,8 +68,11 @@ def prep_gdf(gdf: gpd.geodataframe.GeoDataFrame) -> gpd.geodataframe.GeoDataFram
 		gdf_final: 	Pandas geodataframe with all necessary requirements for Geoviews plotting
 	'''
 	gdf_proj = project_gdf(gdf)
-	gdf_renamed = rename_geometry_column(gdf_proj)
-	gdf_final = remove_invalid_geometry(gdf_renamed)
+	if 'geometry' not in gdf_proj.columns:
+		gdf_proj = rename_geometry_column(gdf_proj)
+	else:
+		pass
+	gdf_final = remove_invalid_geometry(gdf_proj)
 	return gdf_final
 
 def normalize_data(data: np.array) -> np.array:
@@ -182,14 +186,57 @@ def define_colorbar_extremes(gdf: gpd.geodataframe.GeoDataFrame, var: str, diff:
 	    vmax = gdp[var].quantile(0.99)
 	else:
 	    vmin = targ
+	    # Reaches
 	    if geometry_type == "MultiLineString":
 	    	vmid = gdf[var.split('_')[0] + '_conc'].quantile(0.90)
 	    	vmax = gdf[var.split('_')[0] + '_conc'].quantile(0.99)
+	    # NHD Catchments
 	    elif geometry_type == "MultiPolygon":
 	    	vmid = gdf[var.split('_')[0] + '_loadrate'].quantile(0.85)
 	    	vmax = gdf[var.split('_')[0] + '_loadrate'].quantile(0.99)
+	    # HUCs
+	    elif geometry_type == "Polygon":
+	    	try:
+	    		vmid = gdf[var].quantile(0.90)
+	    		vmax = gdf[var].quantile(0.99)
+	    	except:
+	    		vmid = gdf[var].quantile(0.90)
+	    		vmax = gdf[var].quantile(0.99)
+
+
+	print(f'Reach values (min, mid, max) = ({vmin}, {vmid}, {vmax})')    
 	return vmin, vmid, vmax
 
+def huc_var(gdf, var):
+	'''
+	Determines key variables for a HUC plot. 
+
+	Parameters:
+		gdf: 	Geodataframe of HUCs.
+		var:	Should be 'natural', 'protected', or 'naturalprotected'
+
+	Returns:
+		var, vmin, vmax, title
+	'''
+	if var == 'natural':
+		var = 'perc_natural'
+		vmin = 0
+		vmax = 30
+		title = 'Percent Natural Land'
+	elif var == 'protected':
+		var = 'total_perc_protected'
+		vmin = 0
+		vmax = max(gdf[var])
+		title = 'Percent Protected Land'
+	elif var == 'naturalprotected':
+		var = 'Tot_PercNatProtec'
+		vmin = 0
+		vmax = 30
+		title = 'Percent Protected Natural Land'
+	else:
+		print("Please enter one of the following var types for a HUC plot:")
+		print("'natural', 'protected', or 'naturalprotected'")
+	return var, vmin, vmax, title
 
 def plot(
 			gdf: gpd.geodataframe.GeoDataFrame, var: str, targ: float,
@@ -219,11 +266,31 @@ def plot(
 	Returns:
 		TBD
 	''' 
+	# determine if HUC plot 
+	if gdf.index.name == 'huc12':
+		huc = True
+		if var in ['protected', 'natural', 'naturalprotected']:
+			var, vmin, vmax, title = huc_var(gdf, var)
+			cnorm = 'linear'
+			gdf = gdf[gdf[var] < vmax]
+		else:
+			pass
+	else:
+		huc = False
+
 	# Ensure variable is valid 
 	if var not in gdf.columns:
 		print("Invalid Variable. var must be in the list below:")
-		print(gdf.columns)
-		return 
+		if huc == True:
+			if var in ['protected', 'natural', 'naturalprotected']:
+				print(['protected', 'natural', 'naturalprotected'])
+			else:
+				print(gdf.columns)
+			return
+		else:
+			print(gdf.columns)
+			return 
+
 	# Prepare GDF for plotting functions 
 	gdf = prep_gdf(gdf)
 
@@ -240,38 +307,49 @@ def plot(
 	else:
 		pass
 
+	# filter out any data less than target for xs plots
+	if diff:
+		gdf = gdf[gdf[var] > targ]
+		# vmin = gdf[var].min()
+	else:
+		pass
+
 	if geometry_type == "MultiLineString":
 		map_plot = plot_lines(gdf, var, cmap=cmap, colorbar=colorbar, cnorm=cnorm, height=height, width=width, tools=tools, basemap=basemap, vmin=vmin, vmax=vmax)
-	elif geometry_type == "MultiPolygon":
-		map_plot = plot_polys(gdf, var, cmap=cmap, line_width=line_width, colorbar=colorbar, cnorm=cnorm, height=height, width=width, tools=tools, basemap=basemap, vmin=vmin, vmax=vmax)
+	elif geometry_type in ["MultiPolygon", "Polygon"]:
+		map_plot = plot_polys(gdf, var, cmap=cmap, line_width=line_width, colorbar=True, cnorm=cnorm, height=height, width=width, tools=tools, basemap=basemap, vmin=vmin, vmax=vmax)
 	else:
 		print(f"Error! Not equipped to handle {geometry_type}.")
-		print("Please ensure your geometries are MultiLineString or MultiPolygon")
+		print("Please ensure your geometries are MultiLineString, MultiPolygon, or Polygon")
 		return
-	return map_plot, gdf 
+
+	return map_plot 
 
 
 def plot_polys(gdf: gpd.geodataframe.GeoDataFrame, var: str, **kwargs) -> gv.element.geo.Polygons:
 	'''
 	Plot polygons in the DRWI (e.g., NHD+ catchments or HUCs)
+	https://towardsdatascience.com/10-examples-to-master-args-and-kwargs-in-python-6f1e8cc30749
 
 	Parameters:
 		gdf:	Pandas geodataframe with MultiPolygon geometry
 		var:	Variable to plot. 
 
 	Returns:
-		poly_map: 	Polygon map colored by variable of choice plotted on basemap.  
+		poly_map: 	Polygon map colored by variable of choice plotted on basemap. 
 	'''
-	poly_map = gv.Polygons(gdf, vdims=[var]).opts(
-													height = kwargs['height'],
-													width = kwargs['width'],
-													colorbar = kwargs['colorbar'],
-													cmap = kwargs['cmap'],
-													cnorm = kwargs['cnorm'],
-													clim = (kwargs['vmin'], kwargs['vmax']),
-													line_width = kwargs['line_width'],
-													title = var,
-													tools = kwargs['tools']
+	gdf[gdf.index.name] = gdf.index 
+	poly_map = gv.Polygons(gdf, vdims=[gdf.index.name, var]).opts(
+																	height = kwargs['height'],
+																	width = kwargs['width'],
+																	colorbar = kwargs['colorbar'],
+																	color = var,
+																	cmap = kwargs['cmap'],
+																	cnorm = kwargs['cnorm'],
+																	clim = (kwargs['vmin'], kwargs['vmax']),
+																	line_width = kwargs['line_width'],
+																	title = var,
+																	tools = kwargs['tools']
 												)
 	return poly_map * kwargs['basemap'] 
 

@@ -20,7 +20,12 @@ from colorcet.plotting import swatch, swatches, sine_combs
 # Functions
 # *****************************************************************************
 
-def CalcMinMax(reach_df, catch_df, var_reach, var_catch):
+def CalcMinMax(
+    reach_df: gpd.GeoDataFrame,
+    catch_df: gpd.GeoDataFrame,
+    var_reach: str,
+    var_catch: str
+):
     '''
     Find the range of values to define color bar
     '''
@@ -29,7 +34,9 @@ def CalcMinMax(reach_df, catch_df, var_reach, var_catch):
     return vmin, vmax
 
 
-def FormatAxes(ax, bounds=[-8.56 * 10**6,  -8.17 * 10**6, 4.65* 10**6, 5.26 * 10**6]):
+def FormatAxes(
+    ax: plt.Axes,
+    bounds: list = [-8.56 * 10**6,  -8.17 * 10**6, 4.65* 10**6, 5.26 * 10**6]):
     '''
     Format map axes
     Default is the full extent of the DRB
@@ -55,7 +62,10 @@ class MidPointLogNorm(LogNorm):
         return np.ma.masked_array(np.interp(np.log(value), x, y))
 
 
-def LatLonExtent(cluster_name, cluster_gdf):
+def LatLonExtent(
+    cluster_name: str,
+    cluster_gdf: gpd.GeoDataFrame
+):
     '''
     Define latitude and longitude extent of a particular cluster 
     '''
@@ -184,7 +194,8 @@ def PlotMaps(df_reach, df_catch,
     r = dp_reach.plot(column=var_reach, lw=1, ax=ax1,
                         norm=lognorm_reach,
                         cmap = colormap)# matplotlib.colors.LogNorm(vmin, vmax), cmap='RdYlGn_r')
-    r_below = dp_reach.plot(lw=1, ax=ax1, color='#D4DADC', alpha=r_alphas)
+    if zoom != False:
+        r_below = dp_reach.plot(lw=1, ax=ax1, color='#D4DADC', alpha=r_alphas)
     
     c = dp_catch.plot(column=var_catch, lw=0.1, ax=ax2, 
                         norm=lognorm_catch,
@@ -280,13 +291,16 @@ def PlotMaps(df_reach, df_catch,
 
     fig.tight_layout(pad=5)
     # plt.savefig('figs/%s%s%s%s_%s.svg' % (cl_name, fa_name, zoom_name, var_reach, var_catch)) # to automatically save - can adjust dpi, etch 
-    # plt.savefig('figs/%s%s%s%s_%s.png' % (cl_name, fa_name, zoom_name, var_reach, var_catch)) # to automatically save - can adjust dpi, etch 
+    plt.savefig('figs/%s%s%s%s_%s.png' % (cl_name, fa_name, zoom_name, var_reach, var_catch)) # to automatically save - can adjust dpi, etch 
     plt.show()
 
 
-def LatLonExtent_FA(fa_list, focusarea_gdf):
+def LatLonExtent_FA(
+    fa_list: list,
+    focusarea_gdf: gpd.GeoDataFrame
+):
     '''
-    Get lat and lon extent of a foucs area 
+    Get lat and lon extent of a focus area 
     '''
     mn_x = np.inf
     mx_x = -np.inf
@@ -353,7 +367,12 @@ def LatLonExtent_FA(fa_list, focusarea_gdf):
 
 
 
-def Extent_Map(df_catch, bounds_ls, cl, cluster_gdf, base_reach_gdf):
+def Extent_Map(
+    df_catch: gpd.GeoDataFrame,
+    bounds_ls: list,
+    cl: str,
+    cluster_gdf,
+    base_reach_gdf):
     '''
     Create an extent plot 
     '''
@@ -461,79 +480,15 @@ def PlotZoom(df_reach, df_catch, var_reach, var_catch, targ_reach, targ_catch, c
     plt.show()
     
 
-def plot_3030_map(naturalland_gdf, nat_protect_type, incl_boundary=False, boundary_gdf=None, ax=None):
-    nat_protect_types = ['natural', 'protected', 'naturalprotected']
-    if nat_protect_type not in nat_protect_types:
-        raise ValueError('Invalid nat_protec_type. Expected one of: %s' % nat_protect_types)
-        
-    #fig, ax = plt.subplots(figsize=(7,15))
-    
-    lon_max, lon_min, lat_max, lat_min, area, h_v = LatLonExtent_FA(list(naturalland_gdf.index), naturalland_gdf)
-
-
-    # Add protected lands to plot
-    if nat_protect_type == 'natural':
-        plot_column = 'perc_natural'
-        min_nl = 0
-        max_nl = 30
-        title = 'Percent Natural Land'
-        
-    if nat_protect_type == 'protected':
-        plot_column = 'total_perc_protected'
-        min_nl = 0
-        max_nl = max(naturalland_gdf['total_perc_protected'])
-        title = 'Percent Protected Land'
-        
-    if nat_protect_type == 'naturalprotected':
-        plot_column = 'Tot_PercNatProtec'
-        min_nl = 0
-        max_nl = 30
-        title = 'Percent Protected Natural Land'
-    
-    # normalize around target with MidPointLogNorm
-    norm = matplotlib.colors.Normalize(vmin=min_nl, vmax=max_nl)
-        
-    # Add alpha for facecolor so that values above the threshold are transparent
-    alphas = [0 if i > max_nl else 1 for i in naturalland_gdf[plot_column]]
-        
-    if incl_boundary == True:
-        naturalland_gdf.plot(column=plot_column,ax=ax, cmap='cet_CET_CBTL4', norm=norm, alpha=alphas)
-        boundary_gdf.plot(ax=ax, facecolor='none', edgecolor='black')
-    else: 
-        naturalland_gdf.plot(column=plot_column,ax=ax, cmap='cet_CET_CBTL4', norm=norm, alpha=alphas)
-
-        
-    # Turn off ticks
-    plt.tick_params(axis='x', bottom=False, labelbottom=False)
-    plt.tick_params(axis='y', left=False, labelleft=False)
-    
-    # Add title
-    plt.title(title)
-
-    # Add colorbar
-    cax = fig.add_axes([0.95, 0.137, 0.05, 0.732])
-    sm = plt.cm.ScalarMappable(cmap='cet_CET_CBTL4',
-                               norm=norm)
-    cbr = fig.colorbar(sm, cax=cax,)
-    cbr.ax.tick_params(labelsize=10)
-    cbr.ax.minorticks_off()
-
-
-    # Add basemap to plot
-    if area < 7:
-        ctx.add_basemap(ax, source=ctx.providers.CartoDB.Positron, crs=naturalland_gdf.crs.to_string(), zoom=10, interpolation='sinc')
-        ctx.add_basemap(ax, source=ctx.providers.CartoDB.PositronOnlyLabels, crs=naturalland_gdf.crs.to_string(), zoom=10, zorder=2, interpolation='sinc')
-    else:
-        ctx.add_basemap(ax, source=ctx.providers.CartoDB.Positron, crs=naturalland_gdf.crs.to_string(), zoom=9, interpolation='sinc')
-        ctx.add_basemap(ax, source=ctx.providers.CartoDB.PositronOnlyLabels, crs=naturalland_gdf.crs.to_string(), zoom=9, zorder=2, interpolation='sinc')
-    
-    plt.show()
-    
-    return(fig)
-
 
 # SINGLE PANE PLOTTING FUNCTIONS
-def remove_negatives(df_geom, var_geom, targ_geom, geometry):
+def remove_negatives(
+    df_geom: gpd.GeoDataFrame,
+    var_geom: str,
+    targ_geom: float,
+    geometry: str
+):
+    
     if geometry == 'catchment':
         dp_geom = df_geom.loc[:,(var_geom, 'geom_catchment')]
         
@@ -546,7 +501,14 @@ def remove_negatives(df_geom, var_geom, targ_geom, geometry):
     
     return(dp_geom)
 
-def color_normalization_bounds(dp_geom, df_geom, var_geom, targ_geom, geometry, diff=False):
+def color_normalization_bounds(
+    dp_geom: gpd.GeoDataFrame,
+    df_geom: gpd.GeoDataFrame,
+    var_geom: str,
+    targ_geom: float,
+    geometry: str,
+    diff: bool = False
+):
     if geometry == 'catchment':
         suffix = '_loadrate'
     if geometry == 'reach':
@@ -564,7 +526,12 @@ def color_normalization_bounds(dp_geom, df_geom, var_geom, targ_geom, geometry, 
     return(min_geom, mid_geom, max_geom)
 
 
-def set_transparent(min_geom, dp_geom, var_geom, geometry):
+def set_transparent(
+    min_geom: float,
+    dp_geom: gpd.GeoDataFrame,
+    var_geom: str,
+    geometry: str
+):
     if geometry == 'catchment':
         alphas = [0 if i < min_geom else 1 for i in dp_geom[var_geom]]
     if geometry == 'reach':
@@ -573,104 +540,180 @@ def set_transparent(min_geom, dp_geom, var_geom, geometry):
     return(alphas)
 
 
-def plot_FA_boundaries(focusarea_gdf, ax1, cl=None, fa=None):
+def plot_FA_boundaries(
+    focusarea_gdf: gpd.GeoDataFrame,
+    ax1: plt.Axes,
+    cl: str = None,
+    fa: str = None
+):
     # plot focus areas within clusters
     if fa == None:
         fas_in_cluster = focusarea_gdf[focusarea_gdf.cluster == cl]
     else:
         fas_in_cluster = focusarea_gdf[focusarea_gdf.index.isin(fa)]
     
-    fa_geom = fas_in_cluster.plot(lw=1.25, ax=ax1, facecolor="none", edgecolor="black", zorder=10)
+    fas_in_cluster.plot(lw=1.25,
+                        ax=ax1,
+                        facecolor="none",
+                        edgecolor="black",
+                        zorder=10)
     
     return(fas_in_cluster)
 
 
-def add_basemap(ax, area, dp_geom):
+def add_basemap(
+    ax: plt.Axes,
+    area: float,
+    dp_geom: gpd.GeoDataFrame
+):
     if area < 0.05:
-        ctx.add_basemap(ax, source=ctx.providers.CartoDB.Positron, crs=dp_geom.crs.to_string(), zoom=13, interpolation='sinc')
-        ctx.add_basemap(ax, source=ctx.providers.CartoDB.PositronOnlyLabels, crs=dp_geom.crs.to_string(), zoom=13, zorder=2, interpolation='sinc')
+        ctx.add_basemap(ax,
+                        source=ctx.providers.CartoDB.Positron,
+                        crs=dp_geom.crs.to_string(),
+                        zoom=13,
+                        interpolation='sinc')
+        ctx.add_basemap(ax,
+                        source=ctx.providers.CartoDB.PositronOnlyLabels,
+                        crs=dp_geom.crs.to_string(),
+                        zoom=13,
+                        zorder=2,
+                        interpolation='sinc')
     elif area < 1:
-        ctx.add_basemap(ax, source=ctx.providers.CartoDB.Positron, crs=dp_geom.crs.to_string(), zoom=11, interpolation='sinc')
-        ctx.add_basemap(ax, source=ctx.providers.CartoDB.PositronOnlyLabels, crs=dp_geom.crs.to_string(), zoom=11, zorder=2, interpolation='sinc')
+        ctx.add_basemap(ax,
+                        source=ctx.providers.CartoDB.Positron,
+                        crs=dp_geom.crs.to_string(),
+                        zoom=11,
+                        interpolation='sinc')
+        ctx.add_basemap(ax,
+                        source=ctx.providers.CartoDB.PositronOnlyLabels,
+                        crs=dp_geom.crs.to_string(),
+                        zoom=11,
+                        zorder=2,
+                        interpolation='sinc')
     elif area < 4:
-        ctx.add_basemap(ax, source=ctx.providers.CartoDB.Positron, crs=dp_geom.crs.to_string(), zoom=10, interpolation='sinc')
-        ctx.add_basemap(ax, source=ctx.providers.CartoDB.PositronOnlyLabels, crs=dp_geom.crs.to_string(), zoom=10, zorder=2, interpolation='sinc')
+        ctx.add_basemap(ax,
+                        source=ctx.providers.CartoDB.Positron,
+                        crs=dp_geom.crs.to_string(),
+                        zoom=10,
+                        interpolation='sinc')
+        ctx.add_basemap(ax,
+                        source=ctx.providers.CartoDB.PositronOnlyLabels,
+                        crs=dp_geom.crs.to_string(),
+                        zoom=10,
+                        zorder=2,
+                        interpolation='sinc')
     else:
-        ctx.add_basemap(ax, source=ctx.providers.CartoDB.Positron, crs=dp_geom.crs.to_string(), zoom=9, interpolation='sinc')
-        ctx.add_basemap(ax, source=ctx.providers.CartoDB.PositronOnlyLabels, crs=dp_geom.crs.to_string(), zoom=9, zorder=2, interpolation='sinc')
+        ctx.add_basemap(ax,
+                        source=ctx.providers.CartoDB.Positron,
+                        crs=dp_geom.crs.to_string(),
+                        zoom=9,
+                        interpolation='sinc')
+        ctx.add_basemap(ax,
+                        source=ctx.providers.CartoDB.PositronOnlyLabels,
+                        crs=dp_geom.crs.to_string(),
+                        zoom=9,
+                        zorder=2,
+                        interpolation='sinc')
 
         
-def add_colorbar(fig, lognorm_geom, colormap='cet_CET_L18'):
+def add_colorbar(
+    fig: plt.Figure,
+    lognorm_geom,
+    colormap: str = 'cet_CET_L18'
+):
     cax2 = fig.add_axes([0.89, 0.107, 0.04, 0.733]) # adjusts the position of the color bar: right position, bottom, width, top 
     sm2 = plt.cm.ScalarMappable(cmap=colormap,
                                norm=lognorm_geom)
     cbr2 = fig.colorbar(sm2, cax=cax2,)
     cbr2.ax.minorticks_off()
-    cbr2.ax.tick_params(labelsize=8) 
+    cbr2.ax.tick_params(labelsize=8)
+    
 
-
-def PlotMaps_FA_single_pane(df_geom,
-    var_geom, 
-    targ_geom, 
-    geometry,
-    colormap='cet_CET_L18', 
-    cl=None, cluster_gdf=None, 
-    fa=None, focusarea_gdf=None, 
-    diff=False, include_reach=True,
-                           ):
+def PlotMaps_FA_single_pane(
+    df_geom: gpd.GeoDataFrame,
+    var_geom: str,
+    targ_geom: float,
+    geometry: str,
+    colormap: str = 'cet_CET_L18',
+    cl: str = None,
+    cluster_gdf: gpd.GeoDataFrame = None,
+    fa: str = None,
+    focusarea_gdf: gpd.GeoDataFrame = None,
+    include_reach: bool = False,
+    streamorder_gdf: gpd.GeoDataFrame = None,
+    diff: bool = False
+):
     '''
     plot maps with focus areas
     '''
     # remove <0 values for plotting, setting to target/100
-    dp_geom = remove_negatives(df_geom, var_geom, targ_geom, geometry)
+    dp_geom = remove_negatives(df_geom,
+                               var_geom,
+                               targ_geom,
+                               geometry)
 
     # initialize figure
     fig, ax1 = plt.subplots(figsize = (7,7))
 
     # Set midpoint lower if a difference calculation, 
-    min_geom, mid_geom, max_geom = color_normalization_bounds(dp_geom, df_geom, var_geom, targ_geom, geometry, diff=False)   
+    min_geom, mid_geom, max_geom = color_normalization_bounds(dp_geom,
+                                                              df_geom,
+                                                              var_geom,
+                                                              targ_geom,
+                                                              geometry,
+                                                              diff=False)
 
     # normalize around target with MidPointLogNorm
-    lognorm_geom = MidPointLogNorm(vmin=min_geom,vmax=max_geom, 
-                                    midpoint=mid_geom)
+    lognorm_geom = MidPointLogNorm(vmin=min_geom,
+                                   vmax=max_geom,
+                                   midpoint=mid_geom)
 
     # Set alphas so that reaches below the threshold are grey and catchments below thrsehold are transparent
-    alphas = set_transparent(min_geom, dp_geom, var_geom, geometry)
+    alphas = set_transparent(min_geom,
+                             dp_geom,
+                             var_geom,
+                             geometry)
 
     # Plot catchments or reaches
     if geometry == 'catchment':
-        c = dp_geom.plot(column=var_geom, lw=0.1, ax=ax1, 
-                      norm=lognorm_geom,
-                      zorder=1,
-                      cmap=colormap, alpha=alphas)
+        dp_geom.plot(column=var_geom,
+                     lw=0.1,
+                     ax=ax1,
+                     norm=lognorm_geom,
+                     zorder=1,
+                     cmap=colormap,
+                     alpha=alphas)
         
         if include_reach == True:
-            major_streams = df_geom[df_geom['streamorder'] >= 3].loc[:,('streamorder', 'geom')] 
+            major_streams = streamorder_gdf[streamorder_gdf['streamorder'] >= 3].loc[:,('streamorder', 'geom')] 
 
             rch = major_streams.plot(linewidth=(major_streams['streamorder'] - 1) / 2 , ax=ax1, color='cornflowerblue')
         
         ax1.set_title(var_geom + " (kg/ha) for Catchments: \n %s Cluster" % cl)
 
     if geometry == 'reach':
-        r = dp_geom.plot(column=var_geom, lw=2, ax=ax1,
-                      norm=lognorm_geom,
-                      zorder=1,
-                      cmap=colormap)
-    
-        r_below = dp_geom.plot(lw=1.5, ax=ax1, color='#D4DADC', alpha=alphas)
+        # Add streamreaches
+        dp_geom.plot(column=var_geom,
+                     lw=2,
+                     ax=ax1,
+                     norm=lognorm_geom,
+                     zorder=1,
+                     cmap=colormap)
+        
+        # Add grey streamreaches where threshold is met
+        dp_geom.plot(lw=1.5,
+                     ax=ax1,
+                     color='#D4DADC',
+                     alpha=alphas)
 
         ax1.set_title(var_geom + " (mg/L) for Reaches: \n %s Cluster" % cl)
 
-    
-    # plot cluster, if applicable
+    # Plot cluster, if applicable
     if cl != None:
         # Display Cluster Name
         print('Cluster Name = ', cl)
-        # plot cluster
-        # cl_reach = cluster_gdf[cluster_gdf.index == cl].plot(lw=1, ax=ax1, facecolor="none", edgecolor="black", zorder=10)
-        # cl_catch = cluster_gdf[cluster_gdf.index == cl].plot(lw=1, ax=ax2, facecolor="none", edgecolor="black")
 
-    # plot focus areas within clusters
+    # Plot focus areas within clusters
     fas_in_cluster = plot_FA_boundaries(focusarea_gdf, ax1, cl=cl, fa=fa)
 
     # Zoom to boundary
@@ -696,14 +739,174 @@ def PlotMaps_FA_single_pane(df_geom,
         cl_name = ""
     else:
         cl_name = cl + "_"
+        
     if fa==False:
         fa_name = ""
     else:
         fa_name = "FA_"
         
-    # plt.savefig('figs/%s%s%s%s_%s.svg' % (cl_name, fa_name, zoom_name, var_reach, var_catch)) # to automatically save - can adjust dpi, etch 
-    # plt.savefig('figs/%s%s%s%s_%s.png' % (cl_name, fa_name, zoom_name, var_reach, var_catch)) # to automatically save - can adjust dpi, etch 
+    #plt.savefig('figs/%s%s%s%s.svg' % (cl_name, fa_name, var_geom, geometry)) # to automatically save - can adjust dpi, etch 
+    plt.savefig('figs/%s%s%s%s.png' % (cl_name, fa_name, var_geom, geometry)) # to automatically save - can adjust dpi, etch 
     plt.show()
     
-    #return [lon_max, lon_min, lat_max, lat_min]
-    return(ax1)
+    return [lon_max, lon_min, lat_max, lat_min, fig]
+
+
+def plot_remaining_work(
+    gdf: gpd.GeoDataFrame,
+    threshold: int,
+    incl_boundary: bool = False,
+    boundarygdf: gpd.GeoDataFrame = None
+):
+    thresholds = [30, 55, 85]
+    
+    if threshold not in thresholds:
+        raise ValueError('Invalid threshold. Expected one of: %s' % thresholds)
+    
+    fig, ax = plt.subplots(figsize=(12,12))
+
+    cmap_min = 0
+    cmap_max = 100
+    
+    # normalize around target with MidPointLogNorm
+    norm = matplotlib.colors.Normalize(vmin=cmap_min,
+                                       vmax=cmap_max)
+    
+    # Only include areas where meeting the threshold of protected natural land is feasible
+    feasible_gdf = gdf[gdf['perc_natural'] >= threshold]
+        
+    if incl_boundary == True:
+        feasible_gdf.plot(column=feasible_gdf['Tot_PercNatProtec'],
+                          ax=ax,
+                          norm=norm,
+                          cmap='cet_CET_CBTL4')
+        boundarygdf.plot(ax=ax,
+                         facecolor='none',
+                         edgecolor='grey',
+                         lw=0.8)
+    else:
+        feasible_gdf.plot(column=feasible_gdf['Tot_PercNatProtec'],
+                          ax=ax, norm=norm,
+                          cmap='cet_CET_CBTL4')
+
+    # Format axis
+    FormatAxes(ax)
+        
+    # Turn off ticks
+    plt.tick_params(axis='x',
+                    bottom=False,
+                    labelbottom=False)
+    plt.tick_params(axis='y',
+                    left=False,
+                    labelleft=False)
+    
+    # Add title
+    plt.title(f'Percent of Protected Natural Land in HUC 12s where \n{threshold}% Natural Land Threshold is Possible')
+
+    # Add colorbar
+    cax = fig.add_axes([0.78, 0.13, 0.03, 0.732])
+    sm = plt.cm.ScalarMappable(norm=norm, cmap='cet_CET_CBTL4')
+    cbr = fig.colorbar(sm, cax=cax,)
+    cbr.ax.tick_params(labelsize=10)
+    cbr.ax.minorticks_off()
+
+    # Add basemap and labels
+    ctx.add_basemap(ax,
+                    source=ctx.providers.CartoDB.Positron,
+                    crs=feasible_gdf.crs.to_string(),
+                    zoom=7,
+                    interpolation='sinc')
+    ctx.add_basemap(ax,
+                    source=ctx.providers.CartoDB.PositronOnlyLabels,
+                    crs=feasible_gdf.crs.to_string(),
+                    zoom=7,
+                    zorder=2,
+                    interpolation='sinc')
+    
+    plt.show()
+    
+    
+    
+def plot_protec_nat(
+    naturalland_gdf: gpd.GeoDataFrame,
+    nat_protect_type: str,
+    incl_boundary: bool = False,
+    boundary_gdf: bool = None
+):
+    nat_protect_types = ['natural', 'protected', 'naturalprotected']
+    if nat_protect_type not in nat_protect_types:
+        raise ValueError('Invalid nat_protec_type. Expected one of: %s' % nat_protect_types)
+        
+    fig, ax = plt.subplots(figsize=(12,12))
+    
+    # Colormap options: https://holoviews.org/user_guide/Colormaps.html
+    # Add protected lands to plot
+    if nat_protect_type == 'natural':
+        plot_column = 'perc_natural'
+        title = 'Percent Natural Land'
+        cmap = 'Greens'
+    elif nat_protect_type == 'protected':
+        plot_column = 'total_perc_protected'
+        title = 'Percent Protected Land'
+        cmap = 'YlGn'
+    elif nat_protect_type == 'naturalprotected':
+        plot_column = 'Tot_PercNatProtec'
+        title = 'Percent Protected Natural Land'
+        cmap = 'Greens'
+    
+    # normalize around target with MidPointLogNorm
+    norm = matplotlib.colors.Normalize(vmin=0,
+                                       vmax=100)
+        
+    if incl_boundary == True:
+        naturalland_gdf.plot(column=plot_column,
+                             ax=ax,
+                             cmap=cmap,
+                             norm=norm)
+        boundary_gdf.plot(ax=ax,
+                          facecolor='none',
+                          edgecolor='black')
+    else:
+        naturalland_gdf.plot(column=plot_column,
+                             ax=ax,
+                             cmap=cmap,
+                             norm=norm)
+
+    # Format axis
+    FormatAxes(ax)
+    
+    # Turn off ticks
+    plt.tick_params(axis='x',
+                    bottom=False,
+                    labelbottom=False)
+    plt.tick_params(axis='y',
+                    left=False,
+                    labelleft=False)
+    
+    # Add title
+    plt.title(title, fontsize=14)
+
+    # Add colorbar
+    cax = fig.add_axes([0.78, 0.13, 0.03, 0.732])
+    sm = plt.cm.ScalarMappable(cmap=cmap,
+                               norm=norm)
+    cbr = fig.colorbar(sm,
+                       cax=cax)
+    cbr.ax.tick_params(labelsize=10)
+    cbr.ax.minorticks_off()
+
+
+    # Add basemap and labels
+    ctx.add_basemap(ax,
+                    source=ctx.providers.CartoDB.Positron,
+                    crs=naturalland_gdf.crs.to_string(),
+                    zoom=7,
+                    interpolation='sinc')
+    ctx.add_basemap(ax,
+                    source=ctx.providers.CartoDB.PositronOnlyLabels,
+                    crs=naturalland_gdf.crs.to_string(),
+                    zoom=7,
+                    zorder=2,
+                    interpolation='sinc')
+    
+    plt.show()

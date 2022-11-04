@@ -17,6 +17,9 @@ import pandas as pd
 
 import geopandas as gpd
 import requests
+from requests import Request, Response, Session
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 import shapely
 from shapely.geometry.multipolygon import MultiPolygon
 
@@ -173,6 +176,40 @@ def format_for_srat(huc12_id, model_output, with_attenuation, restoration_source
 
 TASK_REQUEST_TIMEOUT = 600
 
+
+# create a TimeoutHTTPAdapter to enforce a default timeout on the session
+# from https://findwork.dev/blog/advanced-usage-python-requests-timeouts-retries-hooks/
+class TimeoutHTTPAdapter(HTTPAdapter):
+    def __init__(self, *args, **kwargs):
+        self.timeout = TASK_REQUEST_TIMEOUT
+        if "timeout" in kwargs:
+            self.timeout = kwargs["timeout"]
+            del kwargs["timeout"]
+        super().__init__(*args, **kwargs)
+
+    def send(self, request, **kwargs):
+        timeout = kwargs.get("timeout")
+        if timeout is None:
+            kwargs["timeout"] = self.timeout
+        return super().send(request, **kwargs)
+
+
+retry_strategy = Retry(
+    total=10,
+    backoff_factor=1,
+    status_forcelist=[413, 429, 500, 502, 503, 504],
+    allowed_methods=["HEAD", "GET", "PUT", "DELETE", "OPTIONS", "TRACE"],
+    raise_on_status=True,
+)
+adapter = TimeoutHTTPAdapter(max_retries=retry_strategy)
+# create a request session
+srat_session = Session()
+srat_session.verify = True
+# mount the session for all requests, attaching the timeout/retry adapter
+srat_session.mount("https://", adapter)
+srat_session.mount("http://", adapter)
+srat_session.headers.update({"x-api-key": wiki_srat_key})
+
 # from https://github.com/WikiWatershed/model-my-watershed/blob/31566fefbb91055c96a32a6279dac5598ba7fc10/src/mmw/apps/modeling/tasks.py#L375-L409
 def run_srat(gwlfe_watereshed_result, with_attenuation, restoration_sources):
     try:
@@ -183,12 +220,12 @@ def run_srat(gwlfe_watereshed_result, with_attenuation, restoration_sources):
     except Exception as e:
         raise Exception("Formatting sub-basin GWLF-E results failed: %s" % e)
 
-    headers = {"x-api-key": wiki_srat_key}
+    # headers = {"x-api-key": wiki_srat_key}
 
     try:
-        r = requests.post(
+        r = srat_session.post(
             wiki_srat_url,
-            headers=headers,
+            # headers=headers,
             data=json.dumps(data),
             timeout=600,
         )

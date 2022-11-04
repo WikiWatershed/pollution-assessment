@@ -61,7 +61,7 @@ class drwiBmps:
         for id in self._r_practice_ids:
             print(
                 'Practice {} of {} ID: {}'.format(c + 1, len(self._r_practice_ids), id),
-                end='' '',
+                end=' ',
             )
             # if c == 20:
             #     break
@@ -471,7 +471,7 @@ if __name__ == '__main__':
                 )
             )
         )
-        print('Importing {} protection BMPs into database'.format(len(r_bmps_dict)))
+        print('Importing {} restoration BMPs into database'.format(len(r_bmps_dict)))
         if len(r_bmps_dict) != len(practices):
             print(
                 '***WARNING: {} practices dropped in database import!***'.format(
