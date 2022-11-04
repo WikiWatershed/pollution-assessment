@@ -345,7 +345,7 @@ class drwiBmps:
             except Exception as e:
                 print(bmp['practice_id'])
                 print(e)
-                print(bmp['geom']['type'])
+                # print(bmp['geom']['type'])
                 # print(bmp['tn'])
 
     def import_protection_bmps(self, _PG_Connection, _bmps_dict):

@@ -6,6 +6,8 @@ import geopandas as gpd
 import warnings
 from pathlib import Path
 
+# OUTPUTS PARQUET FILES TO .\pollution-assessment\stage2\FieldDoc_API\private
+
 warnings.filterwarnings('ignore', message='.*initial implementation of Parquet.*')
 
 # Pull the data from the database
@@ -47,9 +49,9 @@ protection_df.sort_index(inplace=True)
 # OUTPUT TO GEOSPATIAL FORMAT
 # TODO: CANNOT OUTPUT A DATE COLUMN
 restoration_df_temp = restoration_df.drop(columns=['created_at', 'modified_at'])
-restoration_df_temp.to_file('private/SHP/restoration_df.gpkg', driver='GPKG')
+restoration_df_temp.to_file('private/SHP/restoration_comid_df.gpkg', driver='GPKG')
 protection_df_temp = protection_df.drop(columns=['created_at', 'modified_at'])
-protection_df_temp.to_file('private/SHP/protection_df.gpkg', driver='GPKG')
+protection_df_temp.to_file('private/SHP/protection_comid_df.gpkg', driver='GPKG')
 
 # Amend data types that aren't pulling from the database
 restoration_df.huc12 = restoration_df.huc12.astype('category')
@@ -77,6 +79,6 @@ protection_df.head(3)
 
 # Save the data to parquet files
 data_folder = Path('private/')
-restoration_df.to_parquet(data_folder /'restoration_df.parquet',compression='gzip')
-protection_df.to_parquet(data_folder /'protection_df.parquet',compression='gzip')
+restoration_df.to_parquet(data_folder /'restoration_comid_df.parquet',compression='gzip')
+protection_df.to_parquet(data_folder /'protection_comid_df.parquet',compression='gzip')
 
