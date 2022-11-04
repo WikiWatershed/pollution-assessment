@@ -64,7 +64,8 @@ def sort_nat_levels(
 # Single panel bar chart of natural land
 def plot_natural(
     sorted_gdf: gpd.GeoDataFrame,
-    legend_loc: str, anchor: list
+    legend_loc: str, anchor: list,
+    huc: bool = False
 ):
     """ Plot a barchart of natural lands in a dataframe.
     
@@ -85,9 +86,14 @@ def plot_natural(
     """
     
     # Plot all natural land
+    if huc == True: 
+        natcolor = '#BAC3CB'
+    else:
+        natcolor = 'lightslategrey'
+        
     natural = plt.barh(sorted_gdf.index, 
                        width=sorted_gdf['perc_natural'],
-                       color='lightslategrey') 
+                       color=natcolor) 
 
     # Plot perc natural protected by WCPA
     wcpa_width = sorted_gdf['WCPA_PercNat']
@@ -98,8 +104,12 @@ def plot_natural(
     fd_width = fd_width.fillna(0)
     DRWI = plt.barh(sorted_gdf.index, width=fd_width, color='#6EAF46', left=wcpa_width)
     labels = ["" if x < 0.01 else round(x,1) for x in fd_width]
-
-    plt.bar_label(DRWI, labels, color='white', padding=5, label_type='edge')
+    
+    if huc == True:
+        opp_width = sorted_gdf['OppParcel_Perc']
+        opp = plt.barh(sorted_gdf.index, width=opp_width, color='lightslategrey', left=(fd_width+wcpa_width))
+    else:
+        plt.bar_label(DRWI, labels, color='white', padding=5, label_type='edge')
 
     thirty = plt.axvline(30, color='red', linestyle=':')
     nitrate = plt.axvline(55, color='darkorange', linestyle=':')
@@ -113,9 +123,10 @@ def plot_natural(
         plt.xlabel('Percent of Entire FA')
     plt.autoscale(enable=True, axis='y', tight=True)
 
-    plt.legend([natural, DRWI, nonDRWI, thirty, nitrate, biodiversity],
+    plt.legend([natural, DRWI, nonDRWI, opp, thirty, nitrate, biodiversity],
                ['All Natural Land', 'DRWI Protected \nNatural Land', 
                 'Other Protected \nNatural Land',
+                'Opportunity Parcels',
                 'Thirty-by-Thirty Goal', 'Nitrate Goal', 
                 'Excellent Reference \nConditions for Aquatic \nBiodiversity Goal'],
                loc=legend_loc, bbox_to_anchor=anchor, frameon=False)
@@ -273,12 +284,15 @@ def plot_hucs_natural_level(
     high_nat, med_nat, low_nat = sort_nat_levels(huc_gdf, nat_low_bound, nat_high_bound)
     
     nat_level = [high_nat, med_nat]
+    
+    # Drop hucs where there are no opportunity parcels
+    opp_huc_gdf = huc_gdf[huc_gdf['OppParcel_Perc'] > 1]
 
     for i in nat_level:
         ax = plt.subplot(2,1,n)
         n=n+1
 
-        sub_huc_gdf = huc_gdf[huc_gdf.index.isin(i)]
+        sub_huc_gdf = opp_huc_gdf[opp_huc_gdf.index.isin(i)]
         
         sub_huc_gdf = sub_huc_gdf.reset_index()
         sub_huc_gdf = sub_huc_gdf.rename(columns={'index': 'huc12'})
@@ -286,7 +300,7 @@ def plot_hucs_natural_level(
 
         sorted_gdf = sub_huc_gdf.sort_values('Tot_PercNatProtec')
 
-        plot_natural(sorted_gdf, 'lower right', (1.2,0.78))
+        plot_natural(sorted_gdf, 'lower right', (1.2,0.78), huc=True)
 
         if i == high_nat:
             title = '55 - 100% Natural Lands'
