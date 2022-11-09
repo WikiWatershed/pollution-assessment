@@ -27,7 +27,7 @@ def summary_stats(
     """
     
     if gdf.crs.to_string() != 'ESRI:102003':
-        gdf.to_crs(crs='ESRI:102003', inplace=True)
+        gdf = gdf.to_crs(crs='ESRI:102003')
     
     gdf['area_ac'] = gdf.geometry.area/4046.86
     
@@ -38,9 +38,9 @@ def summary_stats(
         area = round(gdf.groupby('RECLASS2')['area_ac'].sum(),2)
         
     else:
-        count = gdf.groupby('practice_type')['practice_id'].count()
-        
-        has_geom = gdf[gdf['geometry'] != None]
+        condensed_gdf = gdf.drop_duplicates(subset='practice_id', keep='first')
+
+        count = condensed_gdf.groupby('practice_type')['practice_id'].count()
         
         area = round(gdf.groupby('practice_type')['area_ac'].sum(),2)
         
