@@ -1,8 +1,8 @@
 ,0
 catchment_hectares,140398.6929
-TotalN,991705.0766070288
-TotalP,83186.39408706487
-Sediment,246443054.85493267
+tn_load,991705.0766070288
+tp_load,83186.39408706487
+tss_load,246443054.85493267
 tn_load_ps,0.0
 tp_load_ps,0.0
 tn_load_avoid,0.0
