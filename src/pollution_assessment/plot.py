@@ -17,6 +17,8 @@ import holoviews as hv
 import colorcet as cc
 from colorcet.plotting import swatch, swatches, sine_combs
 
+from pollution_assessment import calc
+
 
 # *****************************************************************************
 # Functions
@@ -741,7 +743,7 @@ def PlotMaps_FA_single_pane(
     if cl == None:
         cl_name = "DRWI_"
     else:
-        cl_name = cl + "_"
+        cl_name = calc.clusters[cl] + "_"
         
     if fa==False:
         fa_name = ""
