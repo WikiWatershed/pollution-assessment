@@ -6,14 +6,12 @@ import geopandas as gpd
 # Global variable objects
 # *****************************************************************************
 
-# Two COMID types, for distingusing data for a stream reach vs it's catchment
 comid_types = ['reach', 'catch']
 """list: The two geometry COMID types, 'reach' and 'catch', for distingusing 
 data for a stream reach vs it's catchment
 """
 
 
-# Pollutants dictionary, for name conversions & interating over keys or values
 pollutants = {
     'TotalN': 'tn', 
     'TotalP': 'tp',
@@ -48,6 +46,20 @@ targets = {
            'tss': {'loadrate_target':tss_loadrate_target,
                    'conc_target': tss_conc_target}
           }
+
+clusters = {
+    'drb': 'DRB',
+    'Brandywine and Christina': 'BC',
+    'Kirkwood - Cohansey Aquifer': 'KCA',
+    'Middle Schuylkill': 'MS',
+    'New Jersey Highlands': 'NJH',
+    'Poconos and Kittatinny': 'PK',
+    'Schuylkill Highlands': 'SH',
+    'Upper Lehigh': 'UL',
+    'Upstream Suburban Philadelphia': 'USB',
+}
+
+
 
 funding_sources = [
     'Delaware River Restoration Fund', 

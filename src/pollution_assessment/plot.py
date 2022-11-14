@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 import geopandas as gpd
@@ -75,7 +77,7 @@ def LatLonExtent(
     lons = []
 
     # get values
-    values = cluster_gdf[cluster_gdf.index==cluster_name].geom.bounds
+    values = cluster_gdf[cluster_gdf.index==cluster_name].geometry.bounds
     y_extent = (values.maxy - values.miny) 
     x_extent = (values.maxx - values.minx)
     y_extent = y_extent[0] 
@@ -130,8 +132,8 @@ def LatLonExtent(
     
     return lon_max[0], lon_min[0], lat_max[0], lat_min[0], area, h_v
 
-# PlotMaps
-def PlotMaps(df_reach, df_catch, 
+
+def PlotMaps(gdf_reach, gdf_catch, 
     var_reach, var_catch, 
     targ_reach, targ_catch, 
     colormap='cet_CET_L18', 
@@ -145,8 +147,8 @@ def PlotMaps(df_reach, df_catch,
     Alternatively, can return the fig, ax so that manual adjustments can be made within the cell.
     '''
     # create df for plot (dp), remove <0 values for plotting
-    dp_reach = df_reach.loc[:,(var_reach, 'geom')]  # Avoids 'SettingWithCopyWarning'. See https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copydp_catch = df_catch[[var_catch, 'geom_catchment']].copy()  # Make explict copy, to avoid 'SettingWithCopyWarning'
-    dp_catch = df_catch.loc[:,(var_catch, 'geom_catchment')]  # Avoids 'SettingWithCopyWarning'. 
+    dp_reach = gdf_reach.loc[:,(var_reach, gdf_reach.geometry.name)]  # Avoids 'SettingWithCopyWarning'. See https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy. dp_catch = gdf_catch[[var_catch, 'geometry']].copy()  # Make explict copy, to avoid 'SettingWithCopyWarning'
+    dp_catch = gdf_catch.loc[:,(var_catch, gdf_catch.geometry.name)]  # Avoids 'SettingWithCopyWarning'. 
     
     mask_reach = dp_reach[var_reach] < targ_reach / 10
     mask_catch = dp_catch[var_catch] < targ_catch / 10
@@ -172,10 +174,10 @@ def PlotMaps(df_reach, df_catch,
     else:
         min_reach = targ_reach 
         min_catch = targ_catch 
-        mid_reach = df_reach[var_reach.split('_')[0] + '_conc'].quantile(0.90)
-        mid_catch = df_catch[var_catch.split('_')[0] + '_loadrate'].quantile(0.85)
-        max_reach = df_reach[var_reach.split('_')[0] + '_conc'].quantile(0.99)
-        max_catch = df_catch[var_catch.split('_')[0] + '_loadrate'].quantile(0.99)
+        mid_reach = gdf_reach[var_reach.split('_')[0] + '_conc'].quantile(0.90)
+        mid_catch = gdf_catch[var_catch.split('_')[0] + '_loadrate'].quantile(0.85)
+        max_reach = gdf_reach[var_reach.split('_')[0] + '_conc'].quantile(0.99)
+        max_catch = gdf_catch[var_catch.split('_')[0] + '_loadrate'].quantile(0.99)
     # Display min, mid, max
     print(f'Reach values (min, mid, max) = ({min_reach}, {mid_reach}, {max_reach})')    
     print(f'Catch values (min, mid, max) = ({min_catch}, {mid_catch}, {max_catch})')    
@@ -202,10 +204,10 @@ def PlotMaps(df_reach, df_catch,
                         cmap=colormap, alpha=c_alphas)
     if include_reach == True:
         if zoom == False:
-            major_streams = df_reach[df_reach['streamorder'] >= 5].loc[:,('streamorder', 'geom')] 
+            major_streams = gdf_reach[gdf_reach['streamorder'] >= 5].loc[:,('streamorder', gdf_reach.geometry.name)] 
             rch = major_streams.plot(linewidth=major_streams['streamorder'] % 4, ax=ax2, color='cornflowerblue', zorder=10)
         else:
-            major_streams = df_reach[df_reach['streamorder'] >= 4].loc[:,('streamorder', 'geom')] 
+            major_streams = gdf_reach[gdf_reach['streamorder'] >= 4].loc[:,('streamorder', gdf_reach.geometry.name)] 
             rch = major_streams.plot(linewidth=(major_streams['streamorder']+ 1) % 4, ax=ax2, color='cornflowerblue', zorder=10)
 
     # plot cluster, if applicable
@@ -218,7 +220,7 @@ def PlotMaps(df_reach, df_catch,
 
     # plot focus areas within clusters
     if fa == True:
-        # fas = df_catch[df_catch.cluster == cl]['fa_name'].unique().dropna()
+        # fas = gdf_catch[gdf_catch.cluster == cl]['fa_name'].unique().dropna()
         fas_in_cluster = focusarea_gdf[focusarea_gdf.cluster == cl]
         # print("name discrepancies:", fas, focusarea_gdf.index.unique())
         
@@ -274,12 +276,14 @@ def PlotMaps(df_reach, df_catch,
                 ctx.add_basemap(ax, source=ctx.providers.CartoDB.Positron, crs=dp_reach.crs.to_string(), zoom=9, interpolation='sinc')
                 ctx.add_basemap(ax, source=ctx.providers.CartoDB.PositronOnlyLabels, crs=dp_reach.crs.to_string(), zoom=9, zorder=2, interpolation='sinc')
 
-    # naming - #cluster_FA_ZOOM_varreach_varcatch.svg
+    fig.tight_layout(pad=5)
+
+    # Figure file naming - #cluster_FA_ZOOM_varreach_varcatch.svg
     # can adjust this convention as desired 
     if cl == None:
-        cl_name = ""
+        cl_name = "DRWI_"
     else:
-        cl_name = cl + "_"
+        cl_name = calc.clusters[cl] + "_"
     if fa==False:
         fa_name = ""
     else:
@@ -289,9 +293,12 @@ def PlotMaps(df_reach, df_catch,
     else:
         zoom_name = "Zoom_"
 
-    fig.tight_layout(pad=5)
-    # plt.savefig('figs/%s%s%s%s_%s.svg' % (cl_name, fa_name, zoom_name, var_reach, var_catch)) # to automatically save - can adjust dpi, etch 
-    plt.savefig('figs/%s%s%s%s_%s.png' % (cl_name, fa_name, zoom_name, var_reach, var_catch)) # to automatically save - can adjust dpi, etch 
+    # Save figure
+    plt.savefig(
+        Path.cwd() / 'figure_output' 
+        / f'{cl_name}{fa_name}{zoom_name}{var_reach}_{var_catch}'
+    )
+    # Display figure
     plt.show()
 
 
@@ -368,7 +375,7 @@ def LatLonExtent_FA(
 
 
 def Extent_Map(
-    df_catch: gpd.GeoDataFrame,
+    gdf_catch: gpd.GeoDataFrame,
     bounds_ls: list,
     cl: str,
     cluster_gdf,
@@ -381,7 +388,7 @@ def Extent_Map(
     
     fig, ax = plt.subplots(1,1)
     
-    dp_catch = df_catch.loc[:,('geom_catchment')]
+    dp_catch = gdf_catch.loc[:, gdf_catch.geometry.name]
     dp_catch.plot(facecolor='grey', edgecolor='grey', ax=ax)
     
     for pts in bounds_ls:
@@ -396,17 +403,17 @@ def Extent_Map(
     
     cl_catch = cluster_gdf[cluster_gdf.index == cl].plot(lw=1, ax=ax, facecolor="none", edgecolor="black")
 
-    df_reach = base_reach_gdf
-    major_streams = df_reach[df_reach['streamorder'] >= 5].loc[:,('streamorder', 'geom')] 
+    gdf_reach = base_reach_gdf
+    major_streams = gdf_reach[gdf_reach['streamorder'] >= 5].loc[:,('streamorder', gdf_reach.geometry.name)] 
     rch = major_streams.plot(linewidth=major_streams['streamorder'] % 4, ax=ax, color='cornflowerblue', zorder=10)
 
     fig.set_size_inches(8,8)
     FormatAxes(ax)
-    ctx.add_basemap(ax, source=ctx.providers.CartoDB.Positron, crs=df_reach.crs.to_string(), zoom=7)
+    ctx.add_basemap(ax, source=ctx.providers.CartoDB.Positron, crs=gdf_reach.crs.to_string(), zoom=7)
 
 
 
-def PlotZoom(df_reach, df_catch, var_reach, var_catch, targ_reach, targ_catch, cl=None):
+def PlotZoom(gdf_reach, gdf_catch, var_reach, var_catch, targ_reach, targ_catch, cl=None):
     '''
     Can probably delete.
     '''
@@ -436,25 +443,25 @@ def PlotZoom(df_reach, df_catch, var_reach, var_catch, targ_reach, targ_catch, c
 
     # plot reach and catchment
     # normalize around target with MidPointLogNorm
-    r1 = df_reach.plot(column=var_reach, lw=1, ax=plot_order[0],
-                          norm= MidPointLogNorm(vmin=df_reach[var_reach].min(),
-                                                vmax=df_reach[var_reach].max(),
+    r1 = gdf_reach.plot(column=var_reach, lw=1, ax=plot_order[0],
+                          norm= MidPointLogNorm(vmin=gdf_reach[var_reach].min(),
+                                                vmax=gdf_reach[var_reach].max(),
                                                 midpoint=targ_reach),
                           cmap = 'RdYlGn_r')
-    c1 = df_catch.plot(column=var_catch, lw=0.1, ax=plot_order[1],
-                          norm= MidPointLogNorm(vmin=df_catch[var_catch].min(),
-                                                vmax=df_catch[var_catch].max(),
+    c1 = gdf_catch.plot(column=var_catch, lw=0.1, ax=plot_order[1],
+                          norm= MidPointLogNorm(vmin=gdf_catch[var_catch].min(),
+                                                vmax=gdf_catch[var_catch].max(),
                                                 midpoint=targ_catch),
                           cmap='RdYlGn_r')
 
-    r2 = df_reach.plot(column=var_reach, lw=1, ax=plot_order[2],
-                          norm= MidPointLogNorm(vmin=df_reach[var_reach].min(),
-                                                vmax=df_reach[var_reach].max(),
+    r2 = gdf_reach.plot(column=var_reach, lw=1, ax=plot_order[2],
+                          norm= MidPointLogNorm(vmin=gdf_reach[var_reach].min(),
+                                                vmax=gdf_reach[var_reach].max(),
                                                 midpoint=targ_reach),
                           cmap = 'RdYlGn_r')
-    c2 = df_catch.plot(column=var_catch, lw=0.1, ax=plot_order[3],
-                          norm= MidPointLogNorm(vmin=df_catch[var_catch].min(),
-                                                vmax=df_catch[var_catch].max(),
+    c2 = gdf_catch.plot(column=var_catch, lw=0.1, ax=plot_order[3],
+                          norm= MidPointLogNorm(vmin=gdf_catch[var_catch].min(),
+                                                vmax=gdf_catch[var_catch].max(),
                                                 midpoint=targ_catch),
                           cmap='RdYlGn_r')
 
@@ -471,11 +478,11 @@ def PlotZoom(df_reach, df_catch, var_reach, var_catch, targ_reach, targ_catch, c
 
     for ax in [ax1, ax2, ax3, ax4]:
         if area < 7:
-            ctx.add_basemap(ax, source=ctx.providers.CartoDB.Positron, crs=df_reach.crs.to_string(), zoom=10, interpolation='sinc')
-            ctx.add_basemap(ax, source=ctx.providers.CartoDB.PositronOnlyLabels, crs=df_reach.crs.to_string(), zoom=10, zorder=2, interpolation='sinc')
+            ctx.add_basemap(ax, source=ctx.providers.CartoDB.Positron, crs=gdf_reach.crs.to_string(), zoom=10, interpolation='sinc')
+            ctx.add_basemap(ax, source=ctx.providers.CartoDB.PositronOnlyLabels, crs=gdf_reach.crs.to_string(), zoom=10, zorder=2, interpolation='sinc')
         else:
-            ctx.add_basemap(ax, source=ctx.providers.CartoDB.Positron, crs=df_reach.crs.to_string(), zoom=9, interpolation='sinc')
-            ctx.add_basemap(ax, source=ctx.providers.CartoDB.PositronOnlyLabels, crs=df_reach.crs.to_string(), zoom=9, zorder=2, interpolation='sinc')
+            ctx.add_basemap(ax, source=ctx.providers.CartoDB.Positron, crs=gdf_reach.crs.to_string(), zoom=9, interpolation='sinc')
+            ctx.add_basemap(ax, source=ctx.providers.CartoDB.PositronOnlyLabels, crs=gdf_reach.crs.to_string(), zoom=9, zorder=2, interpolation='sinc')
 
     plt.show()
     
@@ -486,14 +493,10 @@ def remove_negatives(
     df_geom: gpd.GeoDataFrame,
     var_geom: str,
     targ_geom: float,
-    geometry: str
+    comid_type: str
 ):
     
-    if geometry == 'catchment':
-        dp_geom = df_geom.loc[:,(var_geom, 'geom_catchment')]
-        
-    if geometry == 'reach':
-        dp_geom = df_geom.loc[:,(var_geom, 'geom')]
+    dp_geom = df_geom.loc[:,(var_geom, df_geom.geometry.name)]
     
     mask_geom = dp_geom[var_geom] < targ_geom / 10
     
@@ -506,12 +509,12 @@ def color_normalization_bounds(
     df_geom: gpd.GeoDataFrame,
     var_geom: str,
     targ_geom: float,
-    geometry: str,
+    comid_type: str,
     diff: bool = False
 ):
-    if geometry == 'catchment':
+    if comid_type == 'catchment':
         suffix = '_loadrate'
-    if geometry == 'reach':
+    if comid_type == 'reach':
         suffix = '_conc'
         
     if diff == False:
@@ -530,11 +533,11 @@ def set_transparent(
     min_geom: float,
     dp_geom: gpd.GeoDataFrame,
     var_geom: str,
-    geometry: str
+    comid_type: str
 ):
-    if geometry == 'catchment':
+    if comid_type == 'catchment':
         alphas = [0 if i < min_geom else 1 for i in dp_geom[var_geom]]
-    if geometry == 'reach':
+    if comid_type == 'reach':
         alphas = [1 if i < min_geom else 0 for i in dp_geom[var_geom]]
 
     return(alphas)
@@ -633,7 +636,7 @@ def PlotMaps_FA_single_pane(
     df_geom: gpd.GeoDataFrame,
     var_geom: str,
     targ_geom: float,
-    geometry: str,
+    comid_type: str,
     colormap: str = 'cet_CET_L18',
     cl: str = None,
     cluster_gdf: gpd.GeoDataFrame = None,
@@ -650,7 +653,7 @@ def PlotMaps_FA_single_pane(
     dp_geom = remove_negatives(df_geom,
                                var_geom,
                                targ_geom,
-                               geometry)
+                               comid_type)
 
     # initialize figure
     fig, ax1 = plt.subplots(figsize = (7,7))
@@ -660,7 +663,7 @@ def PlotMaps_FA_single_pane(
                                                               df_geom,
                                                               var_geom,
                                                               targ_geom,
-                                                              geometry,
+                                                              comid_type,
                                                               diff=False)
 
     # normalize around target with MidPointLogNorm
@@ -672,10 +675,10 @@ def PlotMaps_FA_single_pane(
     alphas = set_transparent(min_geom,
                              dp_geom,
                              var_geom,
-                             geometry)
+                             comid_type)
 
     # Plot catchments or reaches
-    if geometry == 'catchment':
+    if comid_type == 'catchment':
         dp_geom.plot(column=var_geom,
                      lw=0.1,
                      ax=ax1,
@@ -685,13 +688,13 @@ def PlotMaps_FA_single_pane(
                      alpha=alphas)
         
         if include_reach == True:
-            major_streams = streamorder_gdf[streamorder_gdf['streamorder'] >= 3].loc[:,('streamorder', 'geom')] 
+            major_streams = streamorder_gdf[streamorder_gdf['streamorder'] >= 3].loc[:,('streamorder', streamorder_gdf.geometry.name)] 
 
             rch = major_streams.plot(linewidth=(major_streams['streamorder'] - 1) / 2 , ax=ax1, color='cornflowerblue')
         
         ax1.set_title(var_geom + " (kg/ha) for Catchments: \n %s Cluster" % cl)
 
-    if geometry == 'reach':
+    if comid_type == 'reach':
         # Add streamreaches
         dp_geom.plot(column=var_geom,
                      lw=2,
@@ -736,7 +739,7 @@ def PlotMaps_FA_single_pane(
     # naming - #cluster_FA_ZOOM_varreach_varcatch.svg
     # can adjust this convention as desired 
     if cl == None:
-        cl_name = ""
+        cl_name = "DRWI_"
     else:
         cl_name = cl + "_"
         
@@ -745,8 +748,11 @@ def PlotMaps_FA_single_pane(
     else:
         fa_name = "FA_"
         
-    #plt.savefig('figs/%s%s%s%s.svg' % (cl_name, fa_name, var_geom, geometry)) # to automatically save - can adjust dpi, etch 
-    plt.savefig('figs/%s%s%s%s.png' % (cl_name, fa_name, var_geom, geometry)) # to automatically save - can adjust dpi, etch 
+    # Save figure
+    plt.savefig(
+        Path.cwd() / 'figure_output' 
+        / f'{cl_name}{fa_name}{var_geom}_{comid_type}'
+    )
     plt.show()
     
     return [lon_max, lon_min, lat_max, lat_min, fig]
