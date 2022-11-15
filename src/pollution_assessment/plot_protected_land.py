@@ -1,3 +1,4 @@
+from pathlib import Path
 import geopandas as gpd
 import pandas as pd
 import matplotlib
@@ -123,13 +124,21 @@ def plot_natural(
         plt.xlabel('Percent of Entire FA')
     plt.autoscale(enable=True, axis='y', tight=True)
 
-    plt.legend([natural, DRWI, nonDRWI, opp, thirty, nitrate, biodiversity],
-               ['All Natural Land', 'DRWI Protected \nNatural Land', 
-                'Other Protected \nNatural Land',
-                'Opportunity Parcels',
-                'Thirty-by-Thirty Goal', 'Nitrate Goal', 
-                'Excellent Reference \nConditions for Aquatic \nBiodiversity Goal'],
-               loc=legend_loc, bbox_to_anchor=anchor, frameon=False)
+    if huc ==True:
+        plt.legend([natural, DRWI, nonDRWI, opp, thirty, nitrate, biodiversity],
+                   ['All Natural Land', 'DRWI Protected \nNatural Land', 
+                    'Other Protected \nNatural Land',
+                    'Opportunity Parcels',
+                    'Thirty-by-Thirty Goal', 'Nitrate Goal', 
+                    'Excellent Reference \nConditions for Aquatic \nBiodiversity Goal'],
+                   loc=legend_loc, bbox_to_anchor=anchor, frameon=False)
+    else:
+        plt.legend([natural, DRWI, nonDRWI, thirty, nitrate, biodiversity],
+                   ['All Natural Land', 'DRWI Protected \nNatural Land', 
+                    'Other Protected \nNatural Land',
+                    'Thirty-by-Thirty Goal', 'Nitrate Goal', 
+                    'Excellent Reference \nConditions for Aquatic \nBiodiversity Goal'],
+                   loc=legend_loc, bbox_to_anchor=anchor, frameon=False)
 
     
 # Create bar chart of natural lands and protection practices broken down by cluster
@@ -241,7 +250,11 @@ def plot_natural_level(
             title = '0 - 30% Natural Lands'
 
         plt.title(f'Delaware River Basin Focus Area: {title}')
-        
+    
+    plt.savefig(
+        Path.cwd() / 'figure_output/focusarea_natural_land_barplot',
+        bbox_inches='tight'
+    )
         
 
 # Create bar chart of natural lands and protection practices broken down by natural land level
@@ -277,7 +290,7 @@ def plot_hucs_natural_level(
     """
     
     # Initiate figure 
-    fig, ax = plt.subplots(2,1, figsize=(15,125))
+    fig, ax = plt.subplots(2,1, figsize=(15,95), gridspec_kw={'height_ratios': [5.7, 1]})
 
     n=1
 
@@ -308,3 +321,8 @@ def plot_hucs_natural_level(
             title = '0 - 55% Natural Lands'
 
         plt.title(f'Delaware River Basin HUC12: {title}')
+        
+    plt.savefig(
+        Path.cwd() / 'figure_output/huc_natural_land_barplot',
+        bbox_inches='tight'
+    )

@@ -783,19 +783,18 @@ def plot_remaining_work(
     # Only include areas where meeting the threshold of protected natural land is feasible
     feasible_gdf = gdf[gdf['perc_natural'] >= threshold]
         
+
+    feasible_gdf.plot(column=feasible_gdf['Tot_PercNatProtec'],
+                      ax=ax,
+                      norm=norm,
+                      cmap='cet_CET_CBTL4')
+    
     if incl_boundary == True:
-        feasible_gdf.plot(column=feasible_gdf['Tot_PercNatProtec'],
-                          ax=ax,
-                          norm=norm,
-                          cmap='cet_CET_CBTL4')
         boundarygdf.plot(ax=ax,
                          facecolor='none',
                          edgecolor='grey',
                          lw=0.8)
-    else:
-        feasible_gdf.plot(column=feasible_gdf['Tot_PercNatProtec'],
-                          ax=ax, norm=norm,
-                          cmap='cet_CET_CBTL4')
+
 
     # Format axis
     FormatAxes(ax)
@@ -823,6 +822,7 @@ def plot_remaining_work(
                     source=ctx.providers.CartoDB.Positron,
                     crs=feasible_gdf.crs.to_string(),
                     zoom=7,
+                    zorder=0,
                     interpolation='sinc')
     ctx.add_basemap(ax,
                     source=ctx.providers.CartoDB.PositronOnlyLabels,
@@ -831,7 +831,14 @@ def plot_remaining_work(
                     zorder=2,
                     interpolation='sinc')
     
+    
+    plt.savefig(
+        Path.cwd() / 'figure_output' 
+        / f'{threshold}_naturalland'
+    )
+        
     plt.show()
+
     
     
     
@@ -916,5 +923,11 @@ def plot_protec_nat(
                     zoom=7,
                     zorder=2,
                     interpolation='sinc')
+    
+    plt.savefig(
+        Path.cwd() / 'figure_output' 
+        / f'all_{nat_protect_type}_lands'
+    )
+    
     
     plt.show()
