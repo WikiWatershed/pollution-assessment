@@ -45,6 +45,7 @@ stream_layer = "nhdhr"
 # ^^ NOTE:  This is the default.  I did not specify a stream override.
 weather_layer = "NASA_NLDAS_2000_2019"
 used_attenuation = True
+with_concentration=True
 funding_source_groups = {
     "No restoration or protection": [],
     "Direct WPF Restoration": [
@@ -146,7 +147,7 @@ SRAT_KEYS = {
 }
 
 # taken from https://github.com/WikiWatershed/model-my-watershed/blob/31566fefbb91055c96a32a6279dac5598ba7fc10/src/mmw/apps/modeling/tasks.py#L72-L96
-def format_for_srat(huc12_id, model_output, with_attenuation, restoration_sources):
+def format_for_srat(huc12_id, model_output, with_attenuation, with_concentration, restoration_sources):
     formatted = {
         "huc12": huc12_id,
         # Tile Drain may be calculated by future versions of
@@ -155,9 +156,13 @@ def format_for_srat(huc12_id, model_output, with_attenuation, restoration_source
         "tnload_tiledrain": 0,
         "tssload_tiledrain": 0,
     }
+
     if restoration_sources != []:
         formatted["restoration_sources"] = restoration_sources
-        formatted["with_attenuation"] = with_attenuation
+        # NOTE: sending a with_attenuation argument without a restoration source causes a failure
+        # formatted["with_attenuation"] = with_attenuation
+        # NOTE: sending a with_concentration argument without a restoration source causes a failure
+        formatted["with_concentration"] = with_concentration
 
     for load in model_output["Loads"]:
         source_key = SRAT_KEYS.get(load["Source"], None)
@@ -195,10 +200,10 @@ class TimeoutHTTPAdapter(HTTPAdapter):
 
 
 retry_strategy = Retry(
-    total=10,
-    backoff_factor=1,
+    total=5,
+    backoff_factor=0.5,
     status_forcelist=[413, 429, 500, 502, 503, 504],
-    allowed_methods=["HEAD", "GET", "PUT", "DELETE", "OPTIONS", "TRACE"],
+    allowed_methods=["HEAD", "GET", "PUT", "POST", "DELETE", "OPTIONS", "TRACE"],
     raise_on_status=True,
 )
 adapter = TimeoutHTTPAdapter(max_retries=retry_strategy)
@@ -211,10 +216,10 @@ srat_session.mount("http://", adapter)
 srat_session.headers.update({"x-api-key": wiki_srat_key})
 
 # from https://github.com/WikiWatershed/model-my-watershed/blob/31566fefbb91055c96a32a6279dac5598ba7fc10/src/mmw/apps/modeling/tasks.py#L375-L409
-def run_srat(gwlfe_watereshed_result, with_attenuation, restoration_sources):
+def run_srat(gwlfe_watereshed_result, with_attenuation, with_concentration, restoration_sources):
     try:
         data = [
-            format_for_srat(id, w, with_attenuation, restoration_sources)
+            format_for_srat(id, w, with_attenuation, with_concentration, restoration_sources)
             for id, w in gwlfe_watereshed_result.items()
         ]
     except Exception as e:
@@ -319,6 +324,8 @@ cum_results = {
 
 
 #%%
+# huc8_id='02040103'
+# huc8=hucs_to_run.groupby(by=["huc8"]).get_group(huc8_id)
 for huc8_id, huc8 in hucs_to_run.groupby(by=["huc8"]):
     logging.info(huc8_id)
     logging.info("  Loading GWLF-E Results")
@@ -355,7 +362,12 @@ for huc8_id, huc8 in hucs_to_run.groupby(by=["huc8"]):
     logging.info("  Running SRAT")
     for run_group, funding_source_group in funding_source_groups.items():
         logging.info("    Running for {}".format(run_group))
-        wikisrat_result = run_srat(huc8_dict, used_attenuation, funding_source_group)
+        wikisrat_result = run_srat(
+            gwlfe_watereshed_result=huc8_dict,
+            with_attenuation=used_attenuation,
+            with_concentration=with_concentration,
+            restoration_sources=funding_source_group,
+        )
 
         if wikisrat_result is not None:
             with open(
@@ -416,7 +428,8 @@ for huc8_id, huc8 in hucs_to_run.groupby(by=["huc8"]):
 for all_res_key, all_list in cum_results.items():
     if len(all_list) > 0:
         all_catch_frame = pd.concat(all_list, ignore_index=True)
-        all_catch_frame["with_attenuation"] = used_attenuation
+        # all_catch_frame["with_attenuation"] = used_attenuation
+        all_catch_frame["with_concentration"] = with_concentration
         all_catch_frame = (
             all_catch_frame.sort_values(by=["huc", "comid"])
             .reset_index(drop=True)
