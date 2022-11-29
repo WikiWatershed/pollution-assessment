@@ -49,14 +49,14 @@ targets = {
 
 clusters = {
     'drb': 'DRB',
-    'Brandywine and Christina': 'BC',
-    'Kirkwood - Cohansey Aquifer': 'KCA',
-    'Middle Schuylkill': 'MS',
-    'New Jersey Highlands': 'NJH',
-    'Poconos and Kittatinny': 'PK',
-    'Schuylkill Highlands': 'SH',
-    'Upper Lehigh': 'UL',
-    'Upstream Suburban Philadelphia': 'USB',
+    'Brandywine and Christina': 'BCC',
+    'Kirkwood - Cohansey Aquifer': 'KCC',
+    'Middle Schuylkill': 'MSC',
+    'New Jersey Highlands': 'NJHC',
+    'Poconos and Kittatinny': 'PKC',
+    'Schuylkill Highlands': 'SHC',
+    'Upper Lehigh': 'ULC',
+    'Upstream Suburban Philadelphia': 'USPC',
 }
 
 
