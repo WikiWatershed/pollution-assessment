@@ -16,15 +16,9 @@ from datetime import datetime
 import pandas as pd
 
 import geopandas as gpd
-import requests
-from requests import Request, Response, Session
+from requests import Session
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
-import shapely
-from shapely.geometry.multipolygon import MultiPolygon
-
-from modelmw_client import *
-from soupsieve import closest
 
 #%%
 # Set up the API client
@@ -37,7 +31,14 @@ from mmw_secrets import (
     gwlfe_json_dump_path,
     restoration_save_path,
     restoration_json_dump_path,
+    local_srat_path,
 )
+
+sys.path.append(local_srat_path)
+# import psycopg2
+from StringParser import StringParser
+from DatabaseAdapter import DatabaseAdapter
+from DatabaseFormatter import DatabaseFormatter
 
 land_use_layer = "2019_2019"
 # ^^ NOTE:  This is the default, but I also specified it in the code below
@@ -45,7 +46,7 @@ stream_layer = "nhdhr"
 # ^^ NOTE:  This is the default.  I did not specify a stream override.
 weather_layer = "NASA_NLDAS_2000_2019"
 used_attenuation = True
-with_concentration=True
+with_concentration = True
 funding_source_groups = {
     "No restoration or protection": [],
     "Direct WPF Restoration": [
@@ -93,14 +94,33 @@ hucs_to_run["huc6"] = huc12_shapes["huc"].str.slice(0, 6)
 hucs_to_run["huc8"] = huc12_shapes["huc"].str.slice(0, 8)
 hucs_to_run["huc10"] = huc12_shapes["huc"].str.slice(0, 10)
 
+hucs_to_run["super_huc"] = hucs_to_run["huc8"]
+hucs_to_run.loc[
+    hucs_to_run["huc8"].isin(
+        [
+            "02040102",  # East Branch Delaware
+            "02040101",  # Upper Delaware
+            "02040103",  # Lackawaxen
+            "02040104",  # Middle Delaware-Mongaup-Brodhead
+            "02040106",  # Lehigh
+            "02040105",  # Middle Delaware-Musconetcong
+            "02040201",  # Crosswicks-Neshaminy
+            "02040203",  # Schuylkill
+            "02040202",  # Lower Delaware
+            "02040204",  # Delaware Bay, Deep
+        ]
+    ),
+    "super_huc",
+] = "02040x"
+
 #%% Set up logging
 log_file = restoration_save_path + "run_srat_with_bmps.log"
 
-logging.basicConfig(filename=log_file, encoding="utf-8", level=logging.INFO)
+# logging.basicConfig(filename=log_file, encoding="utf-8", level=logging.INFO)
+logging.basicConfig(filename=log_file, level=logging.INFO)
 
 root = logging.getLogger()
 root.setLevel(logging.INFO)
-logging.getLogger("modelmw_client").setLevel(logging.WARN)
 
 # add a handler for when running interactively
 if len(root.handlers) < 2:
@@ -147,7 +167,9 @@ SRAT_KEYS = {
 }
 
 # taken from https://github.com/WikiWatershed/model-my-watershed/blob/31566fefbb91055c96a32a6279dac5598ba7fc10/src/mmw/apps/modeling/tasks.py#L72-L96
-def format_for_srat(huc12_id, model_output, with_attenuation, with_concentration, restoration_sources):
+def format_for_srat(
+    huc12_id, model_output, with_attenuation, with_concentration, restoration_sources
+):
     formatted = {
         "huc12": huc12_id,
         # Tile Drain may be calculated by future versions of
@@ -177,6 +199,44 @@ def format_for_srat(huc12_id, model_output, with_attenuation, with_concentration
             formatted["tssload_" + source_key] = load["Sediment"]
 
     return formatted
+
+
+# GET THE DATABASE CONFIG INFORMATION USING A CONFIG FILE.
+# THE FILE IS IN THE GITIGNORE SO WILL REQUIRE BEING SENT VIA EMAIL.
+
+config_file = json.load(open(local_srat_path + "db_config.json"))
+PG_CONFIG = config_file["PG_CONFIG"]
+
+_host = (PG_CONFIG["host"],)
+_database = (PG_CONFIG["database"],)
+_user = (PG_CONFIG["user"],)
+_password = (PG_CONFIG["password"],)
+_port = PG_CONFIG["port"]
+_flag = "base"
+
+# CREATE A COUPLE HELPER FUNCTIONS TO RUN THE MICROSERVICE
+def respond(err, res=None):
+    return {
+        "statusCode": "400" if err else "200",
+        "body": err.args[0] if err else json.dumps(res),
+        "headers": {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "*",
+        },
+    }
+
+
+def lambda_handler(event, context):
+    try:
+        data = StringParser.parse(event["body"])
+        db = DatabaseAdapter(
+            _database[0], _user[0], _host[0], _port, _password[0], _flag
+        )
+        input_array = DatabaseAdapter.python_to_array(data)
+
+        return respond(None, db.run_model(input_array))
+    except AttributeError as e:
+        return respond(e)
 
 
 TASK_REQUEST_TIMEOUT = 600
@@ -216,38 +276,80 @@ srat_session.mount("http://", adapter)
 srat_session.headers.update({"x-api-key": wiki_srat_key})
 
 # from https://github.com/WikiWatershed/model-my-watershed/blob/31566fefbb91055c96a32a6279dac5598ba7fc10/src/mmw/apps/modeling/tasks.py#L375-L409
-def run_srat(gwlfe_watereshed_result, with_attenuation, with_concentration, restoration_sources):
+def run_srat(
+    gwlfe_watereshed_result,
+    with_attenuation,
+    with_concentration,
+    restoration_sources,
+    srat_input_dump_file=None,
+    local_lambda=False,
+):
     try:
         data = [
-            format_for_srat(id, w, with_attenuation, with_concentration, restoration_sources)
+            format_for_srat(
+                id, w, with_attenuation, with_concentration, restoration_sources
+            )
             for id, w in gwlfe_watereshed_result.items()
         ]
+        if srat_input_dump_file is not None:
+            with open(
+                srat_input_dump_file,
+                "w",
+            ) as fp:
+                json.dump(data, fp, indent=2)
+
     except Exception as e:
         raise Exception("Formatting sub-basin GWLF-E results failed: %s" % e)
 
-    # headers = {"x-api-key": wiki_srat_key}
+    # if we're running locally
+    if local_lambda:
+        event={"body": json.dumps(data)}
+        lamda_response=lambda_handler(event, None)
+        response_body=dict(lamda_response)['body']
+        srat_catchment_result = json.loads(response_body)
 
-    try:
-        r = srat_session.post(
-            wiki_srat_url,
-            # headers=headers,
-            data=json.dumps(data),
-            timeout=600,
-        )
-    except requests.Timeout:
-        raise Exception("Request to SRAT Catchment API timed out")
-    except ConnectionError:
-        raise Exception("Failed to connect to SRAT Catchment API")
+    else:
+        headers = {"x-api-key": wiki_srat_key}
 
-    if r.status_code != 200:
-        raise Exception(
-            "SRAT Catchment API request failed: %s %s" % (r.status_code, r.text)
-        )
+        try:
+            r = srat_session.post(
+                wiki_srat_url,
+                # headers=headers,
+                data=json.dumps(data),
+                timeout=600,
+            )
+            logging.info(
+                "Size of SRAT input: {}".format(
+                    (len(r.request.body) + len(r.request.headers)) / 1e6
+                )
+            )
+            logging.info("Size of SRAT response: {}".format(len(r.content) / 1e6))
+        except requests.Timeout:
+            logging.info(
+                "Size of SRAT input: {}".format(
+                    (len(r.request.body) + len(r.request.headers)) / 1e6
+                )
+            )
+            raise Exception("Request to SRAT Catchment API timed out")
+        except MaxRetryError:
+            logging.info(
+                "Size of SRAT input: {}".format(
+                    (len(r.request.body) + len(r.request.headers)) / 1e6
+                )
+            )
+            raise Exception("Request to SRAT Catchment API timed out")
+        except ConnectionError:
+            raise Exception("Failed to connect to SRAT Catchment API")
 
-    try:
-        srat_catchment_result = r.json()
-    except ValueError:
-        raise Exception("SRAT Catchment API did not return JSON")
+        if r.status_code != 200:
+            raise Exception(
+                "SRAT Catchment API request failed: %s %s" % (r.status_code, r.text)
+            )
+
+        try:
+            srat_catchment_result = r.json()
+        except ValueError:
+            raise Exception("SRAT Catchment API did not return JSON")
 
     return srat_catchment_result
 
@@ -260,7 +362,12 @@ def format_wikisrat_return(
     loads = pd.DataFrame.from_dict(
         source_dict, orient="index", columns=["Value"]
     ).reset_index()
-    # break intod sub-groups
+    #temporary change until Lin updates database
+    loads.loc[loads["index"] == "tpconc_Crop",'index']="maflowv"
+    loads.loc[loads["index"] == "tpconc_hp",'index']="tn_conc_ptsource"
+    loads.loc[loads["index"] == "tnconc_hp",'index']="tp_conc_ptsource"
+    loads.loc[loads["index"] == "tssconc_hp",'index']="tss_conc_ptsource"
+    # break into sub-groups
     maflowv = loads.loc[loads["index"] == "maflowv"].copy()
     conc_ptsource = loads.loc[loads["index"].str.contains("conc_ptsource")].copy()
     reach_conc = loads.loc[loads["index"].str.contains("loadrate_conc")].copy()
@@ -324,9 +431,11 @@ cum_results = {
 
 
 #%%
-# huc8_id='02040103'
-# huc8=hucs_to_run.groupby(by=["huc8"]).get_group(huc8_id)
-for huc8_id, huc8 in hucs_to_run.groupby(by=["huc8"]):
+# huc8_id='02040205'
+# huc8=hucs_to_run.groupby(by=["super_huc"]).get_group(huc8_id)
+# run_group=list(funding_source_groups.keys())[1]
+# funding_source_group=list(funding_source_groups.values())[1]
+for huc8_id, huc8 in hucs_to_run.groupby(by="super_huc"):
     logging.info(huc8_id)
     logging.info("  Loading GWLF-E Results")
     huc8_dict = {}
@@ -362,11 +471,21 @@ for huc8_id, huc8 in hucs_to_run.groupby(by=["huc8"]):
     logging.info("  Running SRAT")
     for run_group, funding_source_group in funding_source_groups.items():
         logging.info("    Running for {}".format(run_group))
+        # gwlfe_watereshed_result=huc8_dict
+        # with_attenuation=used_attenuation
+        # with_concentration=with_concentration
+        # restoration_sources=funding_source_group
+        # srat_input_dump_file=restoration_json_dump_path + "HUC8_{}_{}_input".format(huc8_id, run_group.lower().replace(" ", "_")) + ".json"
+        # local_lambda=True
         wikisrat_result = run_srat(
             gwlfe_watereshed_result=huc8_dict,
             with_attenuation=used_attenuation,
             with_concentration=with_concentration,
             restoration_sources=funding_source_group,
+            srat_input_dump_file=restoration_json_dump_path
+            + "HUC8_{}_{}_input".format(huc8_id, run_group.lower().replace(" ", "_"))
+            + ".json",
+            local_lambda=True,
         )
 
         if wikisrat_result is not None:
@@ -412,6 +531,7 @@ for huc8_id, huc8 in hucs_to_run.groupby(by=["huc8"]):
                         all_catch_frame["gwlfe_endpoint"] = "wikiSRAT"
                         all_catch_frame["huc"] = huc12
                         all_catch_frame["run_group"] = run_group
+                        all_catch_frame["run_type"] = "single"
                         all_catch_frame["funding_sources"] = ", ".join(
                             funding_source_group
                         )
@@ -428,14 +548,16 @@ for huc8_id, huc8 in hucs_to_run.groupby(by=["huc8"]):
 for all_res_key, all_list in cum_results.items():
     if len(all_list) > 0:
         all_catch_frame = pd.concat(all_list, ignore_index=True)
-        # all_catch_frame["with_attenuation"] = used_attenuation
-        all_catch_frame["with_concentration"] = with_concentration
+        all_catch_frame["with_attenuation"] = used_attenuation
+        # all_catch_frame["with_concentration"] = with_concentration
         all_catch_frame = (
             all_catch_frame.sort_values(by=["huc", "comid"])
             .reset_index(drop=True)
             .copy()
         )
-        all_catch_frame.to_csv(restoration_csv_path + all_res_key + csv_extension)
+        all_catch_frame.to_csv(
+            restoration_csv_path + all_res_key +  csv_extension
+        )
 
 
 #%%
