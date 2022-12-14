@@ -95,7 +95,7 @@ hucs_to_run["huc8"] = huc12_shapes["huc"].str.slice(0, 8)
 hucs_to_run["huc10"] = huc12_shapes["huc"].str.slice(0, 10)
 
 hucs_to_run["super_huc"] = hucs_to_run["huc8"]
-hucs_to_run.loc[
+super_huc=hucs_to_run.loc[
     hucs_to_run["huc8"].isin(
         [
             "02040102",  # East Branch Delaware
@@ -109,9 +109,10 @@ hucs_to_run.loc[
             "02040202",  # Lower Delaware
             "02040204",  # Delaware Bay, Deep
         ]
-    ),
-    "super_huc",
-] = "02040x"
+    )
+].copy()
+super_huc["super_huc"]= "02040x"
+hucs_to_run=pd.concat([hucs_to_run,super_huc])
 
 #%% Set up logging
 log_file = restoration_save_path + "run_srat_with_bmps.log"
@@ -531,7 +532,7 @@ for huc8_id, huc8 in hucs_to_run.groupby(by="super_huc"):
                         all_catch_frame["gwlfe_endpoint"] = "wikiSRAT"
                         all_catch_frame["huc"] = huc12
                         all_catch_frame["run_group"] = run_group
-                        all_catch_frame["run_type"] = "single"
+                        all_catch_frame["run_type"] = "combined" if "x" in huc8_id else "single"
                         all_catch_frame["funding_sources"] = ", ".join(
                             funding_source_group
                         )
