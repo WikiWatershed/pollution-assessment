@@ -21,6 +21,8 @@ dependencies:
     - matplotlib-scalebar
     - hvplot  # hvPlot installs most HoloViz libs, https://holoviz.org
     - geoviews
+    - holoviews >1.15
+    - panel >=0.14 # Major update for dashboarding
     - contextily  # retrieve tile maps from the internet. Installs RasterIO.
 
     # Interactivity via Jupyter Notebooks
