@@ -59,8 +59,6 @@ clusters = {
     'Upstream Suburban Philadelphia': 'USPC',
 }
 
-
-
 funding_sources = [
     'Delaware River Restoration Fund', 
     'Delaware River Operational Fund', 
@@ -86,12 +84,21 @@ run_group_sources = {
     4: funding_sources[-1],
 }
 
+run_types = [
+    'single', 
+    'combined',
+]
+"""Run of WikiSRAT for a single HUC08 or combining multiple HUC08s to get 
+upstream loads and concentrations to downstream.
+"""
+
 comid_test_dict = {
     4648450:    'no point sources',
     4648684:    'Upper E Branch Brandywine',
     932040160:  'large point sources',
     2583195:    'protection projects',
     932040230:  'restoration and protection projects',
+    2619256:    "where run_type='combined' gives a value when 'single' does not",
 }
 
 # *****************************************************************************
@@ -101,18 +108,20 @@ comid_test_dict = {
 def select_run(
     comid_type: str,
     df_in: pd.DataFrame, 
-    group: str, 
+    run_group: str, 
+    run_type: str = 'single', 
     ps: bool = False,
 ) -> pd.DataFrame:
-    """ Select wikiSRAT results by run_group and source group
+    """ Select wikiSRAT results by run_group, source name, or run_type
     
     Select a single set of values for every COMID, by selecting the run group 
     and whether or not you want point source values or totals (default)
 
     Args:
-        df_in: WikiSRAT results for multiple run groups
         comid_type: 'reach' or 'catch'
-        group: Run group name
+        df_in: WikiSRAT results for multiple run groups
+        run_group: Run group name
+        run_type: 'single' HUC08 or 'combined' HUC08s. Defaults to 'single'
         ps: Values derived from point sources (True) or totals from all 
             sources (False). Defaults to False.
 
@@ -127,17 +136,26 @@ def select_run(
     else:
         print("Error: comid_type must be 'reach' or 'catch'")
 
-    if ps == True:
+    if (run_type=='combined') or ('run_type' not in df_in):
+        if run_type == 'combined':
+            # Drop 'single' row only if 'combined' doesn't also exist
+            df_in = df_in.drop_duplicates(
+                subset=['comid', 'Source', 'run_group'],
+                keep='last',
+            )
         df_out = df_in.loc[
-            (df_in.run_group == group) &
-            (df_in.Source == ps_name)
-            ]
+            (df_in.run_group == run_group) 
+            & (df_in.Source == ps_name if ps == True else df_in.Source != ps_name)
+        ]
+    elif run_type == 'single':
+        df_out = df_in.loc[
+            (df_in.run_group == run_group) 
+            & (df_in.run_type == run_type)
+            & (df_in.Source == ps_name if ps == True else df_in.Source != ps_name)
+        ]
     else:
-        df_out = df_in.loc[
-            (df_in.run_group == group) &
-            (df_in.Source != ps_name)
-            ]
-    
+        print("run_type must be 'single' or 'combined'")
+
     df_out.set_index('comid', inplace=True)
 
     return df_out
@@ -147,7 +165,8 @@ def join_results(
     comid_type: str,
     gdf: gpd.GeoDataFrame,
     df_in: pd.DataFrame, 
-    group: str, 
+    run_group: str, 
+    run_type: str = 'single', 
     ps: bool = False,
 ) -> gpd.GeoDataFrame:
     """ Join geodataframe with selected wikiSRAT results
@@ -156,7 +175,7 @@ def join_results(
         comid_type: 'reach' or 'catch'
         gdf: PA2 results GeoDataFrame with geometries for mapping
         df_in: WikiSRAT results for multiple run groups
-        group: Run group name
+        run_group: Run group name
         ps: Values derived from point sources (True) or totals from all 
             sources (False). Defaults to False.
 
@@ -164,7 +183,7 @@ def join_results(
         A GeoDataFrame of a single set of wikiSRAT results for every COMID,
         with COMID set as the index. 
     """
-    df = select_run(comid_type, df_in, group, ps)
+    df = select_run(comid_type, df_in, run_group, run_type, ps)
     
     gdf_results = gdf.join(df)
     gdf_results.drop(['huc', 'gwlfe_endpoint','huc_level'], axis='columns', inplace=True)
@@ -176,7 +195,8 @@ def calc_loadrate(
     gdf: gpd.GeoDataFrame,
     df_in: pd.DataFrame, 
     pollutant_key: str,
-    group: str, 
+    run_group: str, 
+    run_type: str = 'single', 
     ps: bool = False,
 ) -> pd.DataFrame:
     """ Select and calculate area-normalized catchment loading rates (kg/ha/y)
@@ -185,7 +205,7 @@ def calc_loadrate(
     Args:
         gdf: GeoDataFrame with geometries for mapping and related info
         df_in: WikiSRAT results for multiple run groups
-        group: Run group name
+        run_group: Run group name
         pollutant_key: Key to pollutant dict
         ps: Values derived from point sources (True) or totals from all 
             sources (False). Defaults to False.
@@ -193,7 +213,7 @@ def calc_loadrate(
     Returns:
         The input GeoDataFrame with three extra `_loadrate` columns added .
     """
-    df = select_run('catch', df_in, group, ps)
+    df = select_run('catch', df_in, run_group, run_type, ps)
 
     df_out = df[f'{pollutant_key}'] / gdf.catchment_hectares
     
@@ -252,6 +272,7 @@ def add_ps(
     comid_type: str, 
     gdf: gpd.GeoDataFrame,
     df_in: pd.DataFrame,
+    run_type: str = 'single',
 ) -> gpd.GeoDataFrame:
     """ Add point source pollution columns to the combined 
     PA2 results GeoDataFrame.
@@ -276,7 +297,7 @@ def add_ps(
     else:
         print("Error: comid_type must be 'reach' or 'catch'")
 
-    df = select_run(comid_type, df_in, run_groups[0], ps=True)
+    df = select_run(comid_type, df_in, run_groups[0], run_type, ps=True)
 
     # Calculate and add each new column by looping through `pollutants` dict
     for pollutant in pollutants.items():
@@ -294,6 +315,7 @@ def add_xsnps(
     comid_type: str, 
     gdf: gpd.GeoDataFrame,
     df_in: pd.DataFrame,
+    run_type: str = 'single',
 ) -> gpd.GeoDataFrame:
     """ Add calculated excess non-point source pollution columns to the combined 
     PA2 results GeoDataFrame.
@@ -324,7 +346,7 @@ def add_xsnps(
     else:
         print("Error: comid_type must be 'reach' or 'catch'")
 
-    df = select_run(comid_type, df_in, run_groups[0], ps=True)
+    df = select_run(comid_type, df_in, run_groups[0], run_type, ps=True)
 
     # Calculate and add each new column by looping through `pollutants` dict
     for pollutant in pollutants.items():
@@ -344,6 +366,7 @@ def add_remaining(
     gdf: gpd.GeoDataFrame,
     df_in: pd.DataFrame,
     group_key: int, 
+    run_type: str = 'single',
 ) -> gpd.GeoDataFrame:
     """ Add calculated "remaining" pollution columns to the PA2 results GeoDataFrame.
     
@@ -375,8 +398,8 @@ def add_remaining(
     else:
         print("Error: comid_type must be 'reach' or 'catch'")
 
-    base_df = select_run(comid_type, df_in, run_groups[0], ps=False)
-    rest_df = select_run(comid_type, df_in, run_groups[group_key], ps=False)
+    base_df = select_run(comid_type, df_in, run_groups[0], run_type, ps=False)
+    rest_df = select_run(comid_type, df_in, run_groups[group_key], run_type, ps=False)
 
     # Calculate and add each new column by looping through `pollutants` dict
     for pollutant in pollutants.items():
@@ -396,6 +419,7 @@ def add_avoided(
     gdf: gpd.GeoDataFrame,
     df_in: pd.DataFrame,
     group_key: int, 
+    run_type: str = 'single',
 ) -> gpd.GeoDataFrame:
     """ Add calculated "avoided" pollution columns to the PA2 results GeoDataFrame.
     
@@ -422,8 +446,8 @@ def add_avoided(
     else:
         print("Error: comid_type must be 'reach' or 'catch'")
 
-    base_df = select_run(comid_type, df_in, run_groups[0], ps=False)
-    prot_df = select_run(comid_type, df_in, run_groups[group_key], ps=False)
+    base_df = select_run(comid_type, df_in, run_groups[0], run_type, ps=False)
+    prot_df = select_run(comid_type, df_in, run_groups[group_key], run_type, ps=False)
 
     # Calculate and add each new column by looping through `pollutants` dict
     for pollutant in pollutants.items():
