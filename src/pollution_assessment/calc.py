@@ -331,7 +331,7 @@ def add_xsnps(
     Returns:
         The input GeoDataFrame with three extra `_xsnps` columns added .
 
-    TO DO: Refactor to use results from `add_ps()`
+    TODO: Refactor to use results from `add_ps()`
     """
 
     calc_suffix = 'xsnps'
@@ -373,8 +373,8 @@ def add_remaining(
     Remaining pollution is calcuated by subtracting reductions from restoration 
     from excess non-point source pollution.
     
-    excess nonpoint source pollution = excess pollution 
-                                   – point source pollution
+    remaining pollution = excess non-point source pollution 
+                          – reduced pollution
 
     Args:
         comid_type: 'reach' or 'catch'
@@ -383,7 +383,9 @@ def add_remaining(
         group_key: Run group key
 
     Returns:
-        The input GeoDataFrame with three extra `_xs` columns added .
+        The input GeoDataFrame with three extra `_rem` columns added .
+
+    TODO: Refactor to create "add reduced" function (i.e. `add_red()`), and use those as inputs
     """
 
     calc_suffix = f'rem{group_key}'
@@ -403,10 +405,10 @@ def add_remaining(
 
     # Calculate and add each new column by looping through `pollutants` dict
     for pollutant in pollutants.items():
-        reduced_df = (  base_df[f'{pollutant[0]}'] 
+        reduced_df = (  base_df[f'{pollutant[0]}']                # uses the old name `pollutant[0]`
                       - rest_df[f'{pollutant[0]}'])/ normalize_by
         
-        gdf[f'{pollutant[1]}_{quantity_type}_{calc_suffix}'] = (
+        gdf[f'{pollutant[1]}_{quantity_type}_{calc_suffix}'] = (  # uses the new name `pollutant[1]`
             gdf[f'{pollutant[1]}_{quantity_type}_{input_suffix}'] 
             - reduced_df
         )
