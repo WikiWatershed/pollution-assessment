@@ -3,8 +3,8 @@ channels:
     - conda-forge
     - defaults
 dependencies:
-    - python =3.9.*  # Py v3.9 has been the default in Anaconda releases since 2021.05
-    
+    - python =3.10.*  
+
     # PyData
     - pandas >=1.4
     - geopandas >=0.12.1  #GeoParquet support updated
@@ -20,9 +20,9 @@ dependencies:
     - matplotlib >=3.5
     - matplotlib-scalebar
     - hvplot  # hvPlot installs most HoloViz libs, https://holoviz.org
-    - geoviews
     - holoviews >1.15
     - panel >=0.14 # Major update for dashboarding
+    - geoviews
     - contextily  # retrieve tile maps from the internet. Installs RasterIO.
 
     # Interactivity via Jupyter Notebooks
@@ -31,6 +31,9 @@ dependencies:
     - ipympl  # jupyter-matplotlib, https://github.com/matplotlib/ipympl
     - ipywidgets  # Required for HoloViz interactivity
     # - nb_conda  # Conda environment & package access extension from within Jupyter
+
+    # HyRiver
+    - pynhd >=0.15
 
     # Dev tools
     # - python-language-server
