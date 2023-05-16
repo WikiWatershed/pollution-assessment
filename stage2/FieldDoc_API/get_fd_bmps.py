@@ -10,9 +10,11 @@ from shapely.geometry import MultiPoint
 from shapely.geometry import MultiLineString
 from shapely.geometry import MultiPolygon
 from shapely.geometry import shape
-import psycopg2
+# import psycopg2
 
 #%%
+# Documentation for the FieldDoc API is available at
+# https://github.com/ChesapeakeCommons/fd-api-ref-tmp
 class drwiBmps:
     def __init__(self, _config_file, _rest_prot='restoration'):
 
@@ -20,6 +22,16 @@ class drwiBmps:
         self._rest_prot = _rest_prot
 
         # Determine if we want to make a protection or restoration request
+        # FieldDoc program ID's:
+        #   1: Delaware River Restoration Fund
+        #   5: Delaware River Watershed Protection Fund - Forestland Capital Grants
+        #   6: Delaware River Watershed Protection Fund - Transaction Grants
+        #   7: Delaware River Watershed Protection Fund - Farm Buffer Capital Grants
+        #   8: Delaware River Operational Fund
+        #   9: Delaware Watershed Conservation Fund
+        # NOTE(@srgdamia1): I don't know how to get the id for a single program or how
+        # to list programs in FieldDocs. These are just the programs we needed.
+
         if self._rest_prot == 'protection':
             # DRWI Protection Program IDs
             self._programs = '5,6,7'
@@ -85,6 +97,12 @@ class drwiBmps:
                     if _return['organization'] is not None
                     else None
                 )
+                single_bmp['project_name'] = (
+                    _return['project']['name']
+                    if _return['project'] is not None
+                    else None
+                )
+                single_bmp['project_id'] = _return['project']['id']
                 single_bmp['description'] = _return['description']
                 single_bmp['practice_type'] = (
                     _return['practice_type']['name']
@@ -127,6 +145,12 @@ class drwiBmps:
                     if _return['organization'] is not None
                     else None
                 )
+                single_bmp['project_name'] = (
+                    _return['project']['name']
+                    if _return['project'] is not None
+                    else None
+                )
+                single_bmp['project_id'] = _return['project']['id']
                 single_bmp['description'] = _return['description']
                 single_bmp['practice_type'] = (
                     _return['practice_type']['name']
@@ -195,6 +219,12 @@ class drwiBmps:
                     if _return['organization'] is not None
                     else None
                 )
+                single_bmp['project_name'] = (
+                    _return['project']['name']
+                    if _return['project'] is not None
+                    else None
+                )
+                single_bmp['project_id'] = _return['project']['id']
                 single_bmp['description'] = _return['description']
                 single_bmp['practice_type'] = (
                     _return['practice_type']['name']
@@ -260,6 +290,12 @@ class drwiBmps:
                     if _return['organization'] is not None
                     else None
                 )
+                single_bmp['project_name'] = (
+                    _return['project']['name']
+                    if _return['project'] is not None
+                    else None
+                )
+                single_bmp['project_id'] = _return['project']['id']
                 single_bmp['description'] = _return['description']
                 single_bmp['practice_type'] = (
                     _return['practice_type']['name']
