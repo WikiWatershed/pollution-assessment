@@ -95,7 +95,7 @@ hucs_to_run["huc8"] = huc12_shapes["huc"].str.slice(0, 8)
 hucs_to_run["huc10"] = huc12_shapes["huc"].str.slice(0, 10)
 
 hucs_to_run["super_huc"] = hucs_to_run["huc8"]
-super_huc=hucs_to_run.loc[
+super_huc = hucs_to_run.loc[
     hucs_to_run["huc8"].isin(
         [
             "02040102",  # East Branch Delaware
@@ -111,8 +111,8 @@ super_huc=hucs_to_run.loc[
         ]
     )
 ].copy()
-super_huc["super_huc"]= "02040x"
-hucs_to_run=pd.concat([hucs_to_run,super_huc])
+super_huc["super_huc"] = "02040x"
+hucs_to_run = pd.concat([hucs_to_run, super_huc]).sort_values(by=["tohuc", "huc"])
 
 #%% Set up logging
 log_file = restoration_save_path + "run_srat_with_bmps.log"
@@ -278,7 +278,7 @@ srat_session.headers.update({"x-api-key": wiki_srat_key})
 
 # from https://github.com/WikiWatershed/model-my-watershed/blob/31566fefbb91055c96a32a6279dac5598ba7fc10/src/mmw/apps/modeling/tasks.py#L375-L409
 def run_srat(
-    gwlfe_watereshed_result,
+    gwlfe_watershed_result,
     with_attenuation,
     with_concentration,
     restoration_sources,
@@ -290,7 +290,7 @@ def run_srat(
             format_for_srat(
                 id, w, with_attenuation, with_concentration, restoration_sources
             )
-            for id, w in gwlfe_watereshed_result.items()
+            for id, w in gwlfe_watershed_result.items()
         ]
         if srat_input_dump_file is not None:
             with open(
@@ -304,9 +304,9 @@ def run_srat(
 
     # if we're running locally
     if local_lambda:
-        event={"body": json.dumps(data)}
-        lamda_response=lambda_handler(event, None)
-        response_body=dict(lamda_response)['body']
+        event = {"body": json.dumps(data)}
+        lamda_response = lambda_handler(event, None)
+        response_body = dict(lamda_response)["body"]
         srat_catchment_result = json.loads(response_body)
 
     else:
@@ -363,11 +363,11 @@ def format_wikisrat_return(
     loads = pd.DataFrame.from_dict(
         source_dict, orient="index", columns=["Value"]
     ).reset_index()
-    #temporary change until Lin updates database
-    loads.loc[loads["index"] == "tpconc_Crop",'index']="maflowv"
-    loads.loc[loads["index"] == "tpconc_hp",'index']="tn_conc_ptsource"
-    loads.loc[loads["index"] == "tnconc_hp",'index']="tp_conc_ptsource"
-    loads.loc[loads["index"] == "tssconc_hp",'index']="tss_conc_ptsource"
+    # temporary change until Lin updates database
+    loads.loc[loads["index"] == "tpconc_Crop", "index"] = "maflowv"
+    loads.loc[loads["index"] == "tpconc_hp", "index"] = "tn_conc_ptsource"
+    loads.loc[loads["index"] == "tnconc_hp", "index"] = "tp_conc_ptsource"
+    loads.loc[loads["index"] == "tssconc_hp", "index"] = "tss_conc_ptsource"
     # break into sub-groups
     maflowv = loads.loc[loads["index"] == "maflowv"].copy()
     conc_ptsource = loads.loc[loads["index"].str.contains("conc_ptsource")].copy()
@@ -440,7 +440,7 @@ for huc8_id, huc8 in hucs_to_run.groupby(by="super_huc"):
     logging.info(huc8_id)
     logging.info("  Loading GWLF-E Results")
     huc8_dict = {}
-    for _, huc_row in huc8.iterrows():
+    for _, huc_row in huc8.sort_values(by=["tohuc", "huc"]).iterrows():
         gwlfe_result_file_name = (
             gwlfe_json_dump_path
             + "{}_{}_{{}}_subbasin_run.json".format(
@@ -472,14 +472,14 @@ for huc8_id, huc8 in hucs_to_run.groupby(by="super_huc"):
     logging.info("  Running SRAT")
     for run_group, funding_source_group in funding_source_groups.items():
         logging.info("    Running for {}".format(run_group))
-        # gwlfe_watereshed_result=huc8_dict
+        # gwlfe_watershed_result=huc8_dict
         # with_attenuation=used_attenuation
         # with_concentration=with_concentration
         # restoration_sources=funding_source_group
         # srat_input_dump_file=restoration_json_dump_path + "HUC8_{}_{}_input".format(huc8_id, run_group.lower().replace(" ", "_")) + ".json"
         # local_lambda=True
         wikisrat_result = run_srat(
-            gwlfe_watereshed_result=huc8_dict,
+            gwlfe_watershed_result=huc8_dict,
             with_attenuation=used_attenuation,
             with_concentration=with_concentration,
             restoration_sources=funding_source_group,
@@ -532,7 +532,9 @@ for huc8_id, huc8 in hucs_to_run.groupby(by="super_huc"):
                         all_catch_frame["gwlfe_endpoint"] = "wikiSRAT"
                         all_catch_frame["huc"] = huc12
                         all_catch_frame["run_group"] = run_group
-                        all_catch_frame["run_type"] = "combined" if "x" in huc8_id else "single"
+                        all_catch_frame["run_type"] = (
+                            "combined" if "x" in huc8_id else "single"
+                        )
                         all_catch_frame["funding_sources"] = ", ".join(
                             funding_source_group
                         )
@@ -556,9 +558,7 @@ for all_res_key, all_list in cum_results.items():
             .reset_index(drop=True)
             .copy()
         )
-        all_catch_frame.to_csv(
-            restoration_csv_path + all_res_key +  csv_extension
-        )
+        all_catch_frame.to_csv(restoration_csv_path + all_res_key + csv_extension)
 
 
 #%%

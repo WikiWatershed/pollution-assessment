@@ -47,6 +47,8 @@ script_dir = os.path.dirname(os.path.realpath(__file__))
 
 #%%
 # Read protected land shapes from private directory
+# These shapes are already chunked into ComID's via SQL scripting within the
+# Academy's database and then repulled to a parquet
 protected_shape_file_fromDB = os.path.realpath(
     os.path.join(script_dir, "../private/protection_df.parquet")
 )
@@ -63,7 +65,7 @@ dissoved_shapes_fromDB = protected_shapes_fromDB.dissolve(
     by="practice_id"
 ).reset_index()
 
-# Read protected land shapes from private directory
+# Read protected land shapes as they are in Field Docs from private directory
 protected_shape_file_fromFD = os.path.realpath(
     os.path.join(script_dir, "../private/protection_bmps_from_FieldDoc.parquet")
 )
