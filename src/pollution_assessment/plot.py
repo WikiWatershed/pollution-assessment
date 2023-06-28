@@ -764,7 +764,8 @@ def plot_remaining_work(
     gdf: gpd.GeoDataFrame,
     threshold: int,
     incl_boundary: bool = False,
-    boundarygdf: gpd.GeoDataFrame = None
+    boundarygdf: gpd.GeoDataFrame = None, 
+    cmap: str = 'cet_CET_CBTL4'
 ):
     thresholds = [30, 55, 85]
     
@@ -787,7 +788,7 @@ def plot_remaining_work(
     feasible_gdf.plot(column=feasible_gdf['Tot_PercNatProtec'],
                       ax=ax,
                       norm=norm,
-                      cmap='cet_CET_CBTL4')
+                      cmap=cmap)
     
     if incl_boundary == True:
         boundarygdf.plot(ax=ax,
@@ -807,12 +808,15 @@ def plot_remaining_work(
                     left=False,
                     labelleft=False)
     
+    #plt.annotate(f'HUC 12 within the Delaware River Basin with less than {threshold}% natural land are shown as transparent',(0,0), (0, -0.02), xycoords='axes fraction')
+
+    
     # Add title
-    plt.title(f'Percent of Protected Natural Land in HUC 12s where \n{threshold}% Natural Land Threshold is Possible')
+    plt.title(f'Percent of Protected Land in HUC 12s where \n{threshold}% Natural Land Threshold is Possible')
 
     # Add colorbar
     cax = fig.add_axes([0.78, 0.13, 0.03, 0.732])
-    sm = plt.cm.ScalarMappable(norm=norm, cmap='cet_CET_CBTL4')
+    sm = plt.cm.ScalarMappable(norm=norm, cmap=cmap)
     cbr = fig.colorbar(sm, cax=cax,)
     cbr.ax.tick_params(labelsize=10)
     cbr.ax.minorticks_off()
@@ -833,12 +837,115 @@ def plot_remaining_work(
     
     
     plt.savefig(
-        Path.cwd() / 'figure_output' 
-        / f'{threshold}_naturalland'
+        f'figure_output/{threshold}_protected_naturalland.png'
     )
         
     plt.show()
+    
+def plot_remaining_work_dif(
+    gdf: gpd.GeoDataFrame,
+    threshold: int,
+    incl_boundary: bool = False,
+    boundarygdf: gpd.GeoDataFrame = None, 
+    cmap: str = 'cet_CET_CBTL4'
+):
+    thresholds = [30, 55, 85]
+    
+    if threshold not in thresholds:
+        raise ValueError('Invalid threshold. Expected one of: %s' % thresholds)
+    
+    # Compute percent of work remaining to meet threshold
+    gdf['Percent_Remaining'] = threshold - gdf['total_perc_protected']
+    gdf.loc[gdf['Percent_Remaining'] < 0, 'Percent_Remaining'] =  0
 
+    if threshold == 85:
+        plot_range = [85, 999]
+    elif threshold == 55: 
+        plot_range = [55, 85]
+    else: 
+        plot_range = [35, 55] 
+        
+    fig, ax = plt.subplots(figsize=(12,12))
+
+    cmap_min = 0
+    cmap_max = threshold
+    
+    # normalize around target with MidPointLogNorm
+    norm = matplotlib.colors.Normalize(vmin=cmap_min,
+                                       vmax=cmap_max)
+    
+    # Only include areas where meeting the threshold of protected natural land is feasible
+    feasible_gdf = gdf.loc[(gdf['perc_natural'] >= plot_range[0]) & (gdf['perc_natural'] < plot_range[1])]
+        
+
+    feasible_gdf.plot(column=feasible_gdf['Percent_Remaining'],
+                      ax=ax,
+                      norm=norm,
+                      cmap=cmap)
+    
+    if incl_boundary == True:
+        boundarygdf.plot(ax=ax,
+                         facecolor='none',
+                         edgecolor='grey',
+                         lw=0.8)
+
+
+    # Format axis
+    FormatAxes(ax)
+        
+    # Turn off ticks
+    plt.tick_params(axis='x',
+                    bottom=False,
+                    labelbottom=False)
+    plt.tick_params(axis='y',
+                    left=False,
+                    labelleft=False)
+    
+    
+    # Add title
+    plt.title(f'Percent of Protection Remaining to Meet {threshold}% Threshold \n(in HUC 12s where the threshold is possible)')
+
+    # Add colorbar
+    cax = fig.add_axes([0.78, 0.13, 0.03, 0.732])
+    sm = plt.cm.ScalarMappable(norm=norm, cmap=cmap)
+    cbr = fig.colorbar(sm, cax=cax,)
+    cbr.ax.tick_params(labelsize=10)
+    cbr.ax.minorticks_off()
+
+    # Add basemap and labels
+    ctx.add_basemap(ax,
+                    source=ctx.providers.CartoDB.Positron,
+                    crs=feasible_gdf.crs.to_string(),
+                    zoom=7,
+                    zorder=0,
+                    interpolation='sinc')
+    ctx.add_basemap(ax,
+                    source=ctx.providers.CartoDB.PositronOnlyLabels,
+                    crs=feasible_gdf.crs.to_string(),
+                    zoom=7,
+                    zorder=2,
+                    interpolation='sinc')
+    
+    
+    plt.savefig(
+        f'figure_output/{threshold}_remaining_work.png'
+    )
+        
+    plt.show()
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     
     
     
