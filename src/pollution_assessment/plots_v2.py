@@ -29,6 +29,31 @@ class ViewExtent(TypedDict):
     ymax: float
 
 
+class StaticPlot(plt.Figure):
+    """Static plot wrapper class to enable hvplot style compositions.
+
+    Maybe with axes not plt.Figure api?
+    """
+    def __init__(
+        figure: plt.Figure,
+    ):
+        pass
+
+    def __add__(
+        self,
+        other: plt.Figure,
+    ):
+        """Adds static plots side by side."""
+        pass
+
+    def __mul__(
+        self,
+        other: plt.Figure,
+    ):
+        """Adds static plots on top of each other."""
+        pass
+
+
 def get_extent(
     gdf: gpd.GeoDataFrame,
     buffer: Optional[float | int] = None,
@@ -95,31 +120,6 @@ def _dynamic_plot(
     NOTE: This should not be responsible for settings config.
     """
     pass
-
-
-class StaticPlot(plt.Figure):
-    """Static plot wrapper class to enable hvplot style compositions.
-
-    Maybe with axes not plt.Figure api?
-    """
-    def __init__(
-        figure: plt.Figure,
-    ):
-        pass
-
-    def __add__(
-        self,
-        other: plt.Figure,
-    ):
-        """Adds static plots side by side."""
-        pass
-
-    def __mul__(
-        self,
-        other: plt.Figure,
-    ):
-        """Adds static plots on top of each other."""
-        pass
 
 
 def make_plot(
