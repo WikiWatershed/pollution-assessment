@@ -8,4 +8,5 @@ from pollution_assessment import (
     dynamic_plot,
     plot_protected_land,
     summary_stats,
+    plots_v2,
 )

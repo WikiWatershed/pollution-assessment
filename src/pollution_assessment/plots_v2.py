@@ -11,21 +11,37 @@ Goals:
 import warnings
 import geopandas as gpd
 import hvplot.pandas
-import holoviews as hv
+import geoviews as gv
 import matplotlib.pyplot as plt
+import matplotlib
+import cartopy
 import pyproj
 from typing import (
     get_args,
+    Union,
+    Protocol,
     Literal,
     Optional,
     TypedDict,
 )
 
 # set up geoviews
-hv.extension('bokeh')
-hv.renderer('bokeh').webgl = True
+gv.extension('bokeh')
+gv.renderer('bokeh').webgl = True
 
 PlotTypes = Literal['static', 'dynamic']
+OutputTypes = Union[gv.Overlay, plt.Figure]
+
+
+class Plotter(Protocol):
+    """Abstract base class for plotting functions."""
+    @classmethod
+    def make_plot(
+        gdf: gpd.GeoDataFrame,
+        **kwargs,
+    ):
+        """Returns a single plot."""
+        raise NotImplementedError
 
 
 class ViewExtent(TypedDict):
@@ -36,7 +52,7 @@ class ViewExtent(TypedDict):
 
 
 class CRS_Info(TypedDict):
-    crs: pyproj.CRS
+    crs: cartopy.crs.CRS
     x_label: str
     y_label: str
 
@@ -45,7 +61,7 @@ def get_crs_info(gdf) -> CRS_Info:
     """Returns CRS, and X/Y axis labels for a plot."""
 
     # NOTE: this assumes the first 2 as X, Y (true so far)
-    crs = gdf.crs
+    crs: cartopy.crs.CRS = cartopy.crs.epsg(gdf.crs.to_epsg())
     axis_info: list[pyproj._crs.Axis] = crs.axis_info
     return CRS_Info(
         crs=crs,
@@ -99,10 +115,11 @@ def get_alphas(
 def add_kwargs(
     kwargs: dict,
     other_kwarg: dict,
+    warn: bool,
 ) -> dict:
     """Adds other_kwarg k, v pairs kwargs:dict, with warnings for conflicts."""
     for k, v in other_kwarg.items():
-        if k in kwargs:
+        if k in kwargs and warn:
             warnings.warn(
                 f'Kwarg conflict! Overriding default {k}={kwargs[k]} with {k}={v}.',
             )
@@ -110,83 +127,204 @@ def add_kwargs(
     return kwargs
 
 
-def make_static_plot(
-    gdf: gpd.GeoDataFrame,
-    **kwargs,
-):
-    """Returns a matplotlib static plot.
+class StaticPlotter:
+    @staticmethod
+    def make_static_plot(
+        gdf: gpd.GeoDataFrame,
+        **kwargs,
+    ):
+        """Returns a matplotlib static plot.
 
-    NOTE: This should not be responsible for settings config.
-        For example, sub-setting the GeoDataFrame should be done
-        before passing it to this function.
-    """
-    raise NotImplementedError
+        NOTE: This should not be responsible for settings config.
+            For example, sub-setting the GeoDataFrame should be done
+            before passing it to this function.
+        """
+        raise NotImplementedError
 
 
-def make_dynamic_plot(
-    gdf: gpd.GeoDataFrame,
-    **kwargs,
-) -> hv.Overlay:
-    """Returns a single holoviews dynamic plot.
+class DynamicPlotter:
+    @staticmethod
+    def _set_color_kwargs(
+        gdf: gpd.GeoDataFrame,
+        arg_dict: dict,
+    ) -> tuple[gpd.GeoDataFrame, dict]:
+        """Sets color kwargs for a GeoDataFrame.
 
-    The same settings apply to all geometries passed in!
-    To control settings for each geometry, use pyfunc:make_map().
-    One can override either hvplot or custom defaults if desired via kwargs.
-    This function passes all kwargs into hvplot. See options below:
-        https://hvplot.holoviz.org/user_guide/Customization.html
+        This allows constant color, or color by column.
+        """
+        # clean up kwargs
+        if not arg_dict.get('hover_cols', None):
+            arg_dict['hover_cols'] = []
 
-    Required Arguments:
-        gdf: GeoDataFrame with data to plot.
+        elif isinstance(arg_dict['hover_cols'], str):
+            arg_dict['hover_cols'] = [arg_dict['hover_cols']]
 
-    Optional Arguments with non-intuitive custom defaults:
-        hover_columns: list[str] - Columns to show in hover tooltip (default=[index.name]).
-        logz: bool - Whether to use log scale for color (default=True).
-        tiles: str - Basemap tile to use (default='CartoLight').
+        arg_dict['hover_cols'] = list(set(
+            [gdf.index.name] + arg_dict['hover_cols']
+        ))
 
-    Returns:
-        hv.Overlay: Holoviews overlay of dynamic plots.
-    """
-    # get crs info
-    crs_dict: CRS_Info = get_crs_info(gdf)
+        if not arg_dict['c']:
+            if not arg_dict['one_color']:
+                arg_dict['c'] = 'blue'
+            arg_dict['clabel'] = None
+            arg_dict['colorbar'] = False
 
-    # get relevant arguments
-    color_col: str = kwargs.pop('c', None)
-    hover_cols: list[str] = kwargs.pop('hover_columns', [])
-    logz: bool = kwargs.pop('logz', True)
-    tiles: str = kwargs.pop('tiles', 'CartoLight')
-    crs: str = kwargs.pop('crs', crs_dict.crs.to_string())
-    xlabel: str = kwargs.pop('xlabel', crs_dict.x_label)
-    ylabel: str = kwargs.pop('ylabel', crs_dict.y_label)
-    clabel: str = kwargs.pop('clabel', color_col)
+            gdf['color'] = [arg_dict['c'] for i in range(len(gdf))]
+            arg_dict['hover_cols'].insert(0, 'color')
 
-    if crs != crs_dict.crs.to_string():
-        warnings.warn(
-            (
-                f'Desired CRS={crs} does not match GeoDataFrame CRS {crs_dict.crs.to_string()}. '
-                f'This may cause issues. Consider not providing a crs kwarg and using defaults.'
-            ),
-            type=UserWarning,
+        else:
+            arg_dict['clabel'] = arg_dict['c']
+
+        del arg_dict['one_color']
+        arg_dict['legend'] = False
+
+        return gdf, arg_dict
+
+    @staticmethod
+    def _draw_lines(
+        gdf: gpd.GeoDataFrame,
+        **kwargs,
+    ) -> list[gv.Path]:
+        """Returns a list of holoviews paths."""
+
+        # get colormap normalization
+        color_col: str = kwargs.pop('c', None)
+        if not color_col in gdf.columns:
+            color_hex = color_col
+            use_cmap = False
+        else:
+            use_cmap = True
+            cmap = kwargs.pop('cmap')
+            vrange_dict: dict[str, float | int] = {
+                'vmin': gdf[color_col].min(),
+                'vmax': gdf[color_col].max(),
+            }
+            if kwargs['logz']:
+                norm_func = matplotlib.colors.LogNorm(**vrange_dict)
+            else:
+                norm_func = matplotlib.colors.Normalize(**vrange_dict)
+
+        # remove non-Path kwargs
+        # TODO: fix this to add colorbar
+        crs = kwargs.pop('crs')
+        tiles = kwargs.pop('tiles')
+        kwargs.pop('hover_cols', None)
+        kwargs.pop('logz', None)
+        kwargs.pop('legend', None)
+        kwargs.pop('clabel', None)
+        kwargs.pop('legend', None)
+        kwargs.pop('colorbar', None)
+
+        paths: list[gv.Path] = []
+        for i, row in gdf.iterrows():
+            if use_cmap:
+                color_hex: tuple[float, float, float, float] = cmap(
+                    norm_func(row[color_col])
+                )
+            paths.append(
+                gv.Path(
+                    row['geometry'],
+                    crs=crs,
+                ).opts(
+                    color=color_hex,
+                    **kwargs,
+                )
+            )
+        output = None
+        for path in paths:
+            if not output:
+                output = path
+            else:
+                output *= path
+        return output * getattr(gv.tile_sources, tiles)
+
+    @classmethod
+    def make_plot(
+        cls,
+        gdf: gpd.GeoDataFrame,
+        **kwargs,
+    ) -> gv.Overlay:
+        """Returns a single holoviews dynamic plot.
+
+        The same settings apply to all geometries passed in!
+        To control settings for each geometry, use pyfunc:make_map().
+        One can override either hvplot or custom defaults if desired via kwargs.
+        This function passes all kwargs into hvplot. See options below:
+            https://hvplot.holoviz.org/user_guide/Customization.html
+
+        Required Arguments:
+            gdf: GeoDataFrame with data to plot. Note there must only be one geometry type!
+
+        Optional Arguments with non-intuitive custom defaults:
+            hover_cols: list[str] - Columns to show in hover tooltip (default=[index.name]).
+            logz: bool - Whether to use log scale for color (default=True).
+            tiles: str - Basemap tile to use (default='CartoLight').
+            cmap: str - Colormap to use (default='RdYlGn_r').
+
+        Returns:
+            gv.Overlay: Holoviews overlay of dynamic plots.
+        """
+        # get crs info
+        crs_dict: CRS_Info = get_crs_info(gdf)
+
+        # set defaults
+        arg_dict: dict = {
+            'c': None,
+            'one_color': None,
+            'hover_cols': [],
+            'logz': True,
+            'tiles': 'CartoLight',
+            'cmap': matplotlib.colormaps['RdYlGn_r'],
+            'crs': crs_dict['crs'],
+            'xlabel': crs_dict['x_label'],
+            'ylabel': crs_dict['y_label'],
+        }
+
+        # add kwargs (overwriting defaults if desired)
+        arg_dict = add_kwargs(
+            arg_dict,
+            kwargs,
+            warn=False,
         )
 
-    # return holoviews overlay
-    return gdf.hvplot(
-        geo=True,
-        crs=crs,
-        c=color_col,
-        tiles=tiles,
-        logz=logz,
-        hover_cols=list(set([gdf.index.name] + hover_cols)),
-        xlabel=xlabel,
-        ylabel=ylabel,
-        clabel=clabel,
-        **kwargs,
-    )
+        # clean up color kwargs
+        gdf, arg_dict = cls._set_color_kwargs(
+            gdf,
+            arg_dict,
+        )
+
+        if arg_dict['crs'] != crs_dict['crs']:
+            warnings.warn(
+                (
+                    f'Desired CRS={arg_dict["crs"]} does not match GeoDataFrame '
+                    f'CRS {crs_dict.crs}. '
+                    f'This may cause issues. Consider not providing a crs kwarg '
+                    f'and using defaults.'
+                ),
+                type=UserWarning,
+            )
+
+        # remove empty geometry rows
+        gdf = gdf.dropna(subset=['geometry'])
+
+        # return plot based on geometry type
+        if 'Line' not in gdf.geom_type.iloc[0]:
+            return gdf.hvplot(
+                geo=True,
+                **arg_dict,
+            )
+        else:
+            return cls._draw_lines(
+                gdf,
+                **arg_dict,
+            )
 
 
 def make_map(
     gdf: gpd.GeoDataFrame,
     how: Optional[PlotTypes] = None,
     color_column: Optional[str] = None,
+    cmap: Optional[str | matplotlib.colors.Colormap] = None,
     hover_columns: Optional[list[str]] = None,
     group_column: Optional[str] = None,
     group_subset: Optional[str | int | list[str | int]] = None,
@@ -195,7 +333,7 @@ def make_map(
     alpha_min_max: Optional[tuple[float, float]] = None,
     extent_buffer: Optional[float | int] = None,
     **kwargs,
-) -> hv.Overlay | plt.Figure:
+) -> gv.Overlay | plt.Figure:
     """Top level plotting function.
 
     Arguments:
@@ -203,6 +341,7 @@ def make_map(
         how: Whether to return a static or dynamic plot.
             Default is dynamic w/ holoviews.
         color_column: Column to use for coloring.
+        cmap: Colormap to use. Default is RdYlGn_r.
         group_column: Column to use for grouping geometries.
             Ex: A HUC12 column could group COMIDs by HUC12.
         group_subset: Subset of the index OR group_column to plot.
@@ -251,29 +390,36 @@ def make_map(
     # associates layer idxs with an alpha value
     alphas: dict[int, float] = {}
 
-    # plot layers and return stacked output
+    # get plotter class
+    plotter: Plotter = DynamicPlotter if how == 'dynamic' else StaticPlotter
+
+    # get color related arguments
+    if not cmap:
+        cmap = matplotlib.colormaps['RdYlGn_r']
+    if isinstance(cmap, str):
+        cmap = matplotlib.colormaps[cmap]
+    elif not isinstance(cmap, matplotlib.colors.Colormap):
+        raise TypeError(
+            f'Invalid cmap={cmap}. Must be a matplotlib colormap obj or str.',
+        )
+
+    # get basic input dict
+    args_dict = {
+        'c': color_column,
+        'cmap': cmap,
+        'hover_cols': hover_columns,
+        'xlim': (extent_dict['xmin'], extent_dict['xmax']),
+        'ylim': (extent_dict['ymin'], extent_dict['ymax']),
+    }
+
+    # make a plot for each alpha grouping and/or geometry type
     output = None
     for i, layer_gdf in enumerate(layer_gdfs):
-        if how == 'dynamic':
-            args_dict = {
-                'c': color_column,
-                'hover_columns': hover_columns,
-                'alpha': alphas.get(i, None),
-                'xlim': (extent_dict.xmin, extent_dict.xmax),
-                'ylim': (extent_dict.ymin, extent_dict.ymax),
-            }
-            plot: hv.Overlay = make_dynamic_plot(
-                layer_gdf,
-                **add_kwargs(args_dict, kwargs),
-            )
-
-        else:
-            raise NotImplementedError
-            args_dict = {}
-            plot: plt.Figure = make_static_plot(
-                layer_gdf,
-                **add_kwargs(args_dict, kwargs),
-            )
+        args_dict['alpha'] = alphas.get(i, 1.0)
+        plot = plotter.make_plot(
+            layer_gdf,
+            **add_kwargs(args_dict, kwargs, warn=True),
+        )
 
         if not output:
             output = plot
