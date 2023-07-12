@@ -8,5 +8,8 @@ from pollution_assessment import (
     dynamic_plot,
     plot_protected_land,
     summary_stats,
-    plots_v2,
+)
+
+from pollution_assessment.v2_plots.make_map import (
+    make_map,
 )
