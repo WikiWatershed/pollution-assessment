@@ -9,13 +9,18 @@ Goals:
 * Lower level functions that can be wrapped into higher level functions.
 """
 import warnings
+import numpy as np
 import geopandas as gpd
-import hvplot.pandas
 import geoviews as gv
 import matplotlib.pyplot as plt
 import matplotlib
 import cartopy
 import pyproj
+from pollution_assessment.v2_plots.dynamic import DynamicPlotter
+from pollution_assessment.v2_plots.static import StaticPlotter
+from pollution_assessment.v2_plots.shared import (
+    add_kwargs,
+)
 from typing import (
     get_args,
     Union,
@@ -23,6 +28,7 @@ from typing import (
     Literal,
     Optional,
     TypedDict,
+    Generator,
 )
 
 # set up geoviews
@@ -44,6 +50,12 @@ class Plotter(Protocol):
         raise NotImplementedError
 
 
+PLOTTER_MAP: dict[PlotTypes, Plotter] = {
+    'static': StaticPlotter,
+    'dynamic': DynamicPlotter,
+}
+
+
 class ViewExtent(TypedDict):
     xmin: float
     ymin: float
@@ -51,23 +63,19 @@ class ViewExtent(TypedDict):
     ymax: float
 
 
-class CRS_Info(TypedDict):
-    crs: cartopy.crs.CRS
-    x_label: str
-    y_label: str
+class SplitOutInput(TypedDict):
+    gdf: gpd.GeoDataFrame
+    alpha_column: Optional[str]
+    alpha_threshold: Optional[float]
+    alpha_min_max: Optional[tuple[float, float]]
 
 
-def get_crs_info(gdf) -> CRS_Info:
-    """Returns CRS, and X/Y axis labels for a plot."""
-
-    # NOTE: this assumes the first 2 as X, Y (true so far)
-    crs: cartopy.crs.CRS = cartopy.crs.epsg(gdf.crs.to_epsg())
-    axis_info: list[pyproj._crs.Axis] = crs.axis_info
-    return CRS_Info(
-        crs=crs,
-        x_label=axis_info[0].name,
-        y_label=axis_info[1].name,
-    )
+class LayerDict(TypedDict):
+    """Dict to hold GeoDataFrame indices and info for each plot layer."""
+    idxs: list[int | str]
+    sub_gdf: gpd.GeoDataFrame
+    geom_type: str
+    alpha: float
 
 
 def get_extent(
@@ -91,40 +99,73 @@ def get_alphas(
     gdf: gpd.GeoDataFrame,
     alpha_col: str,
     threshold: float,
-    alpha_min: Optional[float] = None,
-    alpha_max: Optional[float] = None,
-) -> list[float]:
-    """Returns a list of alphas for a GeoDataFrame.
+    alpha_minmax: Optional[tuple[float, float]] = None,
+) -> np.array:
+    """Returns a list of alphas for a GeoDataFrame. Based on a threshold / column
 
     This will be used to grey out non-selected geographies.
     """
-    if not alpha_min:
-        alpha_min = 0
-    if not alpha_max:
-        alpha_max = 1
+    if not alpha_minmax:
+        alpha_minmax = (0.0, 1.0)
+
+    alpha_min, alpha_max = alpha_minmax
+
     try:
-        return [
-            alpha_min if i < threshold else alpha_max for i in gdf[alpha_col]
-        ]
+        return np.where(gdf[alpha_col] < threshold, alpha_min, alpha_max)
+
     except KeyError:
         raise KeyError(
-            f'Column {alpha_col} not found in GeoDataFrame.'
+            f'param:alpha_col={alpha_col} not found in GeoDataFrame.'
         )
 
 
-def add_kwargs(
-    kwargs: dict,
-    other_kwarg: dict,
-    warn: bool,
-) -> dict:
-    """Adds other_kwarg k, v pairs kwargs:dict, with warnings for conflicts."""
-    for k, v in other_kwarg.items():
-        if k in kwargs and warn:
-            warnings.warn(
-                f'Kwarg conflict! Overriding default {k}={kwargs[k]} with {k}={v}.',
+def split_out_layers(
+    input_dict: SplitOutInput,
+) -> Generator[LayerDict, SplitOutInput, None]:
+    """Generator that splits a GeoDataFrame indices into layers.
+
+    Used to plot multiple layers with different alpha values, 
+    or different geometry types.
+    """
+    # get alphas
+    apply_alpha = False
+    if input_dict['alpha_column'] and input_dict['alpha_threshold']:
+        apply_alpha = True
+        if not input_dict['alpha_min_max']:
+            input_dict['alpha_min_max'] = (0.0, 1.0)
+
+        input_dict['gdf']['alpha_values'] = get_alphas(
+            input_dict['gdf'],
+            input_dict['alpha_column'],
+            input_dict['alpha_threshold'],
+            input_dict['alpha_min_max'],
+        )
+
+        unique_alphas = input_dict['gdf'].alpha_values.unique()
+
+    # first check for different geometry types
+    geom_types = input_dict['gdf'].geom_type.unique()
+    for geom_type in geom_types:
+        sub_gdf = input_dict['gdf'][input_dict['gdf'].geom_type == geom_type]
+
+    # yield based on geometry type + alpha combo
+        if not apply_alpha:
+            yield LayerDict(
+                idxs=sub_gdf.index.tolist(),
+                sub_gdf=sub_gdf,
+                geom_type=geom_type,
+                alpha=1.0,
             )
-        kwargs[k] = v
-    return kwargs
+        else:
+            for alpha in unique_alphas:
+                yield LayerDict(
+                    idxs=sub_gdf[sub_gdf.alpha_values == alpha].index.tolist(),
+                    sub_gdf=sub_gdf[sub_gdf.alpha_values == alpha].drop(
+                        columns=['alpha_values'],
+                    ),
+                    geom_type=geom_type,
+                    alpha=alpha,
+                )
 
 
 def make_map(
@@ -166,6 +207,9 @@ def make_map(
             f'Invalid how={how}. Must be one of {PlotTypes}.'
         )
 
+    # get plotter class
+    plotter: Plotter = PLOTTER_MAP[how]
+
     # get the column to group on
     if not group_column:
         group_column = 'index'
@@ -189,17 +233,6 @@ def make_map(
             )
         gdf = gdf.dissolve(by=group_column, observed=True)
 
-    # hold layers based on alpha thresholds, as well as geometry type
-    layer_gdfs: list[gpd.GeoDataFrame] = []
-    if not alpha_column:
-        layer_gdfs.append(gdf)
-
-    # associates layer idxs with an alpha value
-    alphas: dict[int, float] = {}
-
-    # get plotter class
-    plotter: Plotter = DynamicPlotter if how == 'dynamic' else StaticPlotter
-
     # get color related arguments
     if not cmap:
         cmap = matplotlib.colormaps['RdYlGn_r']
@@ -221,10 +254,16 @@ def make_map(
 
     # make a plot for each alpha grouping and/or geometry type
     output = None
-    for i, layer_gdf in enumerate(layer_gdfs):
-        args_dict['alpha'] = alphas.get(i, 1.0)
+    layer_gdfs = split_out_layers(SplitOutInput(
+        gdf=gdf,
+        alpha_column=alpha_column,
+        alpha_threshold=alpha_threshold,
+        alpha_min_max=alpha_min_max,
+    ))
+    for layer_dict in layer_gdfs:
+        args_dict['alpha'] = layer_dict['alpha']
         plot = plotter.make_plot(
-            layer_gdf,
+            layer_dict['sub_gdf'],
             **add_kwargs(args_dict, kwargs, warn=True),
         )
 
@@ -234,28 +273,3 @@ def make_map(
             output *= plot
 
     return output
-
-
-class StaticPlot(plt.Figure):
-    """Static plot wrapper class to enable hvplot style compositions.
-
-    Maybe with axes not plt.Figure api?
-    """
-    def __init__(
-        figure: plt.Figure,
-    ):
-        pass
-
-    def __add__(
-        self,
-        other: plt.Figure,
-    ):
-        """Adds static plots side by side."""
-        pass
-
-    def __mul__(
-        self,
-        other: plt.Figure,
-    ):
-        """Adds static plots on top of each other."""
-        pass
