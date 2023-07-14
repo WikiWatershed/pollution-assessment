@@ -14,8 +14,6 @@ import geopandas as gpd
 import geoviews as gv
 import matplotlib.pyplot as plt
 import matplotlib
-import cartopy
-import pyproj
 from pollution_assessment.v2_plots.dynamic import DynamicPlotter
 from pollution_assessment.v2_plots.static import StaticPlotter
 from pollution_assessment.v2_plots.shared import (
@@ -31,9 +29,6 @@ from typing import (
     Generator,
 )
 
-# set up geoviews
-gv.extension('bokeh')
-gv.renderer('bokeh').webgl = True
 
 PlotTypes = Literal['static', 'dynamic']
 OutputTypes = Union[gv.Overlay, plt.Figure]
@@ -44,9 +39,18 @@ class Plotter(Protocol):
     @classmethod
     def make_plot(
         gdf: gpd.GeoDataFrame,
+        first: bool,
         **kwargs,
     ):
-        """Returns a single plot."""
+        """Returns a single plot.
+
+        Arguments:
+            gdf: GeoDataFrame with data to plot.
+            first: Whether this is the first plot in a series of layers.
+
+        Returns:
+            The plot output for rendering in a notebook or layering.
+        """
         raise NotImplementedError
 
 
@@ -75,7 +79,6 @@ class LayerDict(TypedDict):
     idxs: list[int | str]
     sub_gdf: gpd.GeoDataFrame
     geom_type: str
-    alpha: float
 
 
 def get_extent(
@@ -95,7 +98,51 @@ def get_extent(
     )
 
 
-def get_alphas(
+def get_cmap(
+    cmap: Optional[str | matplotlib.colors.Colormap] = None,
+) -> matplotlib.colors.Colormap:
+    if not cmap:
+        cmap = matplotlib.colormaps['RdYlGn_r']
+    if isinstance(cmap, str):
+        cmap = matplotlib.colormaps[cmap]
+    elif not isinstance(cmap, matplotlib.colors.Colormap):
+        raise TypeError(
+            f'Invalid cmap={cmap}. Must be a matplotlib colormap obj or str.',
+        )
+    return cmap
+
+
+def subset_columns(
+    gdf: gpd.GeoDataFrame,
+    hover_columns: Optional[list[str]] = None,
+    color_column: Optional[str] = None,
+    alpha_column: Optional[str] = None,
+    group_column: Optional[str] = None,
+) -> gpd.GeoDataFrame:
+    """Subsets columns to reduce GeoDataFrame dimensionality."""
+    if not hover_columns:
+        hover_columns = []
+
+    hover_columns = hover_columns + [
+        'geometry',
+        color_column,
+        alpha_column,
+        group_column,
+    ]
+    hover_columns = [c for c in hover_columns if c]
+
+    # add the coloring, alpha, and group columns
+    for col in hover_columns:
+        if col not in gdf.columns:
+            warnings.warn(
+                f'Column {col} not found in GeoDataFrame.',
+            )
+            hover_columns.remove(col)
+
+    return gdf[list(set(hover_columns))]
+
+
+def add_alphas(
     gdf: gpd.GeoDataFrame,
     alpha_col: str,
     threshold: float,
@@ -110,8 +157,25 @@ def get_alphas(
 
     alpha_min, alpha_max = alpha_minmax
 
+    # make sure correct min/max values are being used
+    if alpha_min > alpha_max:
+        raise ValueError(
+            f'Invalid alpha_min_max={alpha_minmax}. '
+            f'Min must be less than max.',
+        )
+    if alpha_min < 0.0 or alpha_max > 1.0:
+        raise ValueError(
+            f'Invalid alpha_min_max={alpha_minmax}. '
+            f'Min and max must be between 0.0 and 1.0.',
+        )
+
     try:
-        return np.where(gdf[alpha_col] < threshold, alpha_min, alpha_max)
+        gdf['alpha_value'] = np.where(
+            gdf[alpha_col] < threshold,
+            alpha_min,
+            alpha_max,
+        )
+        return gdf
 
     except KeyError:
         raise KeyError(
@@ -119,53 +183,22 @@ def get_alphas(
         )
 
 
-def split_out_layers(
-    input_dict: SplitOutInput,
-) -> Generator[LayerDict, SplitOutInput, None]:
-    """Generator that splits a GeoDataFrame indices into layers.
-
-    Used to plot multiple layers with different alpha values, 
-    or different geometry types.
-    """
-    # get alphas
-    apply_alpha = False
-    if input_dict['alpha_column'] and input_dict['alpha_threshold']:
-        apply_alpha = True
-        if not input_dict['alpha_min_max']:
-            input_dict['alpha_min_max'] = (0.0, 1.0)
-
-        input_dict['gdf']['alpha_values'] = get_alphas(
-            input_dict['gdf'],
-            input_dict['alpha_column'],
-            input_dict['alpha_threshold'],
-            input_dict['alpha_min_max'],
-        )
-
-        unique_alphas = input_dict['gdf'].alpha_values.unique()
+def split_geometry_types(
+    gdf: gpd.GeoDataFrame,
+) -> Generator[LayerDict, gpd.GeoDataFrame, None]:
+    """Generator that splits a GeoDataFrame indices into layers by geom_type."""
 
     # first check for different geometry types
-    geom_types = input_dict['gdf'].geom_type.unique()
+    geom_types = gdf.geom_type.unique()
     for geom_type in geom_types:
-        sub_gdf = input_dict['gdf'][input_dict['gdf'].geom_type == geom_type]
+        sub_gdf = gdf[gdf.geom_type == geom_type]
 
     # yield based on geometry type + alpha combo
-        if not apply_alpha:
-            yield LayerDict(
-                idxs=sub_gdf.index.tolist(),
-                sub_gdf=sub_gdf,
-                geom_type=geom_type,
-                alpha=1.0,
-            )
-        else:
-            for alpha in unique_alphas:
-                yield LayerDict(
-                    idxs=sub_gdf[sub_gdf.alpha_values == alpha].index.tolist(),
-                    sub_gdf=sub_gdf[sub_gdf.alpha_values == alpha].drop(
-                        columns=['alpha_values'],
-                    ),
-                    geom_type=geom_type,
-                    alpha=alpha,
-                )
+        yield LayerDict(
+            idxs=sub_gdf.index.tolist(),
+            sub_gdf=sub_gdf,
+            geom_type=geom_type,
+        )
 
 
 def make_map(
@@ -198,6 +231,12 @@ def make_map(
         alpha_threshold: Threshold for alpha values.
             Above the value gets alpha_max, below gets alpha_min.
         alpha_min_max: Min and max values for alpha.
+            Default is (0.0, 1.0).
+        extent_buffer: Buffer to add to extent (must be in same units as data).
+        kwargs: Additional kwargs to pass to the plotter.
+
+    Returns:
+        The plot output for rendering in a notebook.
     """
     # check plot type
     if not how:
@@ -207,8 +246,24 @@ def make_map(
             f'Invalid how={how}. Must be one of {PlotTypes}.'
         )
 
+    # remove empty geometry rows
+    if 'geometry' not in gdf.columns:
+        raise KeyError(
+            'GeoDataFrame must have a geometry column to plot!',
+        )
+    gdf = gdf.dropna(subset=['geometry'])
+
     # get plotter class
     plotter: Plotter = PLOTTER_MAP[how]
+
+    # subset columns
+    gdf: gpd.GeoDataFrame = subset_columns(
+        gdf,
+        hover_columns,
+        color_column,
+        alpha_column,
+        group_column,
+    )
 
     # get the column to group on
     if not group_column:
@@ -234,36 +289,33 @@ def make_map(
         gdf = gdf.dissolve(by=group_column, observed=True)
 
     # get color related arguments
-    if not cmap:
-        cmap = matplotlib.colormaps['RdYlGn_r']
-    if isinstance(cmap, str):
-        cmap = matplotlib.colormaps[cmap]
-    elif not isinstance(cmap, matplotlib.colors.Colormap):
-        raise TypeError(
-            f'Invalid cmap={cmap}. Must be a matplotlib colormap obj or str.',
+    cmap: matplotlib.colors.Colormap = get_cmap(cmap)
+
+    # get alpha values as a column if desired
+    if alpha_column and alpha_threshold:
+        gdf = add_alphas(
+            gdf,
+            alpha_column,
+            alpha_threshold,
+            alpha_min_max,
         )
 
     # get basic input dict
     args_dict = {
         'c': color_column,
         'cmap': cmap,
-        'hover_cols': hover_columns,
         'xlim': (extent_dict['xmin'], extent_dict['xmax']),
         'ylim': (extent_dict['ymin'], extent_dict['ymax']),
     }
 
     # make a plot for each alpha grouping and/or geometry type
     output = None
-    layer_gdfs = split_out_layers(SplitOutInput(
-        gdf=gdf,
-        alpha_column=alpha_column,
-        alpha_threshold=alpha_threshold,
-        alpha_min_max=alpha_min_max,
-    ))
+    layer_gdfs = split_geometry_types(gdf)
+
     for layer_dict in layer_gdfs:
-        args_dict['alpha'] = layer_dict['alpha']
         plot = plotter.make_plot(
             layer_dict['sub_gdf'],
+            first=bool(output is None),
             **add_kwargs(args_dict, kwargs, warn=True),
         )
 
