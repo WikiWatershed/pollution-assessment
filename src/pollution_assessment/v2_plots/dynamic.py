@@ -2,19 +2,64 @@ import warnings
 import geopandas as gpd
 import matplotlib
 import hvplot.pandas
+import concurrent.futures
 import geoviews as gv
+from pandas import Series
 from pollution_assessment.v2_plots.shared import (
     CRS_Info,
     get_crs_info,
     add_kwargs,
 )
+from typing import (
+    Generator,
+    TypedDict,
+    Optional,
+)
+
+# set up geoviews
+gv.extension('bokeh')
+gv.renderer('bokeh').webgl = True
+
+
+class DynamicLineInput(TypedDict):
+    """Input for a generator required to maintain formatting for lines"""
+    gdf: gpd.GeoDataFrame
+    args: dict
+    apply_alpha: bool
+
+
+class DynamicLineOutput(TypedDict):
+    gdf: gpd.GeoDataFrame
+    alpha: float
+    color: tuple[float, float, float, float]
 
 
 class DynamicPlotter:
     """Uses Holo/GeoViews to make dynamic plots."""
 
     @staticmethod
-    def _set_color_kwargs(
+    def _set_hover_args(
+        gdf: gpd.GeoDataFrame,
+        arg_dict: dict,
+    ) -> dict:
+        # get hover columns argument formatted
+        if not arg_dict.get('hover_cols', None):
+            arg_dict['hover_cols'] = [
+                c for c in gdf.columns if c != 'geometry'
+            ]
+
+        elif isinstance(arg_dict['hover_cols'], str):
+            arg_dict['hover_cols'] = [arg_dict['hover_cols']]
+
+        if gdf.index.name:
+            arg_dict['hover_cols'].insert(0, gdf.index.name)
+
+        arg_dict['hover_cols'] = list(set(arg_dict['hover_cols']))
+
+        return arg_dict
+
+    @staticmethod
+    def _set_color_args(
         gdf: gpd.GeoDataFrame,
         arg_dict: dict,
     ) -> tuple[gpd.GeoDataFrame, dict]:
@@ -22,28 +67,33 @@ class DynamicPlotter:
 
         This allows constant color, or color by column.
         """
-        # clean up kwargs
-        if not arg_dict.get('hover_cols', None):
-            arg_dict['hover_cols'] = []
-
-        elif isinstance(arg_dict['hover_cols'], str):
-            arg_dict['hover_cols'] = [arg_dict['hover_cols']]
-
-        arg_dict['hover_cols'] = list(set(
-            [gdf.index.name] + arg_dict['hover_cols']
-        ))
-
+        # set static color if desired
         if not arg_dict['c']:
             if not arg_dict['one_color']:
                 arg_dict['c'] = 'blue'
             arg_dict['clabel'] = None
+            del arg_dict['cmap']
             arg_dict['colorbar'] = False
 
-            gdf['color'] = [arg_dict['c'] for i in range(len(gdf))]
-            arg_dict['hover_cols'].insert(0, 'color')
+            gdf['color'] = [arg_dict['c'] for i in gdf.index]
 
+        # set dynamic color if desired
         else:
             arg_dict['clabel'] = arg_dict['c']
+            vrange_dict: dict[str, float | int] = {
+                'vmin': gdf[arg_dict['c']].min(),
+                'vmax': gdf[arg_dict['c']].max(),
+            }
+            if arg_dict['logz']:
+                norm_func = matplotlib.colors.LogNorm(**vrange_dict)
+            else:
+                norm_func = matplotlib.colors.Normalize(**vrange_dict)
+
+            gdf['color'] = (
+                gdf[arg_dict['c']]
+                .apply(norm_func)
+                .apply(arg_dict['cmap'])
+            )
 
         del arg_dict['one_color']
         arg_dict['legend'] = False
@@ -51,67 +101,109 @@ class DynamicPlotter:
         return gdf, arg_dict
 
     @staticmethod
+    def _generate_lines(
+        input_dict: DynamicLineInput,
+    ) -> Generator[DynamicLineInput, DynamicLineOutput, None]:
+        """Yields a a row of a GeoDataFrame with a color and alpha value."""
+
+        if input_dict['apply_alpha']:
+            alphas: Series = input_dict['gdf'].pop('alpha_value')
+        else:
+            alphas: Series = Series(
+                [1.0 for i in range(len(input_dict['gdf']))],
+                index=input_dict['gdf'].index,
+            )
+        colors: Series = input_dict['gdf'].pop('color')
+
+        for idx, row in input_dict['gdf'].iterrows():
+            row_gdf = gpd.GeoDataFrame(
+                [row],
+                geometry='geometry',
+                crs=input_dict['args']['crs'],
+            )
+            yield DynamicLineOutput(
+                gdf=row_gdf,
+                alpha=alphas.loc[idx],
+                color=colors[idx],
+            )
+
+    @staticmethod
+    def _make_path(
+        line_output: DynamicLineOutput,
+        args_dict: dict,
+    ) -> gv.Path:
+        """Returns a holoviews path."""
+        args_dict_copy = args_dict.copy()
+        return gv.Path(
+            line_output['gdf'],
+            crs=args_dict_copy.pop('crs'),
+        ).opts(
+            color=line_output['color'],
+            alpha=line_output['alpha'],
+            tools=['hover'],
+            **args_dict_copy,
+        )
+
+    @classmethod
     def _draw_lines(
+        cls,
         gdf: gpd.GeoDataFrame,
         **kwargs,
     ) -> list[gv.Path]:
-        """Returns a list of holoviews paths."""
+        """Returns a list of holoviews paths.
 
-        # get colormap normalization
-        color_col: str = kwargs.pop('c', None)
-        if not color_col in gdf.columns:
-            color_hex = color_col
-            use_cmap = False
-        else:
-            use_cmap = True
-            cmap = kwargs.pop('cmap')
-            vrange_dict: dict[str, float | int] = {
-                'vmin': gdf[color_col].min(),
-                'vmax': gdf[color_col].max(),
-            }
-            if kwargs['logz']:
-                norm_func = matplotlib.colors.LogNorm(**vrange_dict)
-            else:
-                norm_func = matplotlib.colors.Normalize(**vrange_dict)
+        This is more convoluted than it needs to be because of documented
+        issues with holoviews Paths and geopandas MultiLines. See:
+            https://github.com/holoviz/hvplot/issues/1107
+            https://github.com/holoviz/holoviews/issues/4862
+        """
 
-        # remove non-Path kwargs
-        # TODO: fix this to add colorbar
-        crs = kwargs.pop('crs')
+        # just plot if no customization is needed
+        if kwargs['c'] not in gdf.columns and 'alpha_value' not in gdf.columns:
+            return gdf.hvplot(
+                geo=True,
+                **kwargs,
+            )
+
+        # get rid of kwargs that don't apply to lines
+        kwargs.pop('cmap')
+        kwargs.pop('c')
+        kwargs.pop('legend')
+        kwargs.pop('hover_cols')
         tiles = kwargs.pop('tiles')
-        kwargs.pop('hover_cols', None)
-        kwargs.pop('logz', None)
-        kwargs.pop('legend', None)
-        kwargs.pop('clabel', None)
-        kwargs.pop('legend', None)
-        kwargs.pop('colorbar', None)
+
+        # otherwise, combine each line into a single plot
+        line_generator = cls._generate_lines(
+            input_dict=DynamicLineInput(
+                gdf=gdf,
+                args=kwargs,
+                apply_alpha=bool('alpha_value' in gdf.columns),
+            ),
+        )
+
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            futures = []
+            for line_output in line_generator:
+                futures.append(
+                    executor.submit(
+                        cls._make_path,
+                        line_output=line_output,
+                        args_dict=kwargs,
+                    ),
+                )
 
         paths: list[gv.Path] = []
-        for i, row in gdf.iterrows():
-            if use_cmap:
-                color_hex: tuple[float, float, float, float] = cmap(
-                    norm_func(row[color_col])
-                )
-            paths.append(
-                gv.Path(
-                    row['geometry'],
-                    crs=crs,
-                ).opts(
-                    color=color_hex,
-                    **kwargs,
-                )
-            )
-        output = None
-        for path in paths:
-            if not output:
-                output = path
-            else:
-                output *= path
-        return output * getattr(gv.tile_sources, tiles)
+        for future in concurrent.futures.as_completed(futures):
+            result = future.result()
+            paths.append(result)
+
+        return gv.Overlay(paths) * getattr(gv.tile_sources, tiles)
 
     @classmethod
     def make_plot(
         cls,
         gdf: gpd.GeoDataFrame,
+        first: Optional[bool] = True,
         **kwargs,
     ) -> gv.Overlay:
         """Returns a single holoviews dynamic plot.
@@ -141,7 +233,7 @@ class DynamicPlotter:
         arg_dict: dict = {
             'c': None,
             'one_color': None,
-            'hover_cols': [],
+            'legend': False,
             'logz': True,
             'tiles': 'CartoLight',
             'cmap': matplotlib.colormaps['RdYlGn_r'],
@@ -158,7 +250,13 @@ class DynamicPlotter:
         )
 
         # clean up color kwargs
-        gdf, arg_dict = cls._set_color_kwargs(
+        gdf, arg_dict = cls._set_color_args(
+            gdf,
+            arg_dict,
+        )
+
+        # get hover columns
+        arg_dict = cls._set_hover_args(
             gdf,
             arg_dict,
         )
@@ -174,17 +272,21 @@ class DynamicPlotter:
                 type=UserWarning,
             )
 
-        # remove empty geometry rows
-        gdf = gdf.dropna(subset=['geometry'])
-
         # return plot based on geometry type
         if 'Line' not in gdf.geom_type.iloc[0]:
-            return gdf.hvplot(
+            # apply alpha
+            if 'alpha_value' in gdf.columns:
+                arg_dict['alpha'] = gv.dim('alpha_value')
+            output = gdf.hvplot(
                 geo=True,
                 **arg_dict,
             )
         else:
-            return cls._draw_lines(
+            output = cls._draw_lines(
                 gdf,
                 **arg_dict,
             )
+            if not first:
+                output = output.Path
+
+        return output
