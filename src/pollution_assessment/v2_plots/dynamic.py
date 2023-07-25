@@ -2,8 +2,10 @@ import warnings
 import geopandas as gpd
 import matplotlib
 import hvplot.pandas
+import numpy as np
 import concurrent.futures
 import geoviews as gv
+import holoviews as hv
 from pandas import Series
 from pollution_assessment.v2_plots.shared import (
     CRS_Info,
@@ -36,6 +38,32 @@ class DynamicLineOutput(TypedDict):
 
 class DynamicPlotter:
     """Uses Holo/GeoViews to make dynamic plots."""
+
+    @staticmethod
+    def make_colorbar(
+        cmap: matplotlib.colors.Colormap,
+        clim: tuple[float, float],
+        clabel: str,
+        logz: bool,
+    ) -> gv.Overlay:
+        """Makes a standalone colorbar for our dynamic line plots"""
+        if logz:
+
+            minv, maxv = np.log10(clim[0]), np.log10(clim[1])
+            clabel = f'log10({clabel})'
+        else:
+            minv, maxv = clim
+
+        return hv.HeatMap(
+            [(0, 0, minv), (0, 1, maxv)]
+        ).opts(
+            cmap=cmap,
+            colorbar=True,
+            alpha=0,
+            clabel=clabel,
+            logz=logz,
+            show_frame=False,
+        )
 
     @staticmethod
     def _set_hover_args(
@@ -80,6 +108,7 @@ class DynamicPlotter:
         # set dynamic color if desired
         else:
             arg_dict['clabel'] = arg_dict['c']
+            arg_dict['colorbar'] = True
 
         del arg_dict['one_color']
         arg_dict['legend'] = False
@@ -106,8 +135,8 @@ class DynamicPlotter:
 
         if 'colors' not in input_dict['gdf'].columns:
             vrange_dict: dict[str, float | int] = {
-                'vmin': input_dict['gdf'][color_col].min(),
-                'vmax': input_dict['gdf'][color_col].max(),
+                'vmin': input_dict['args'].pop('vmin'),
+                'vmax': input_dict['args'].pop('vmax'),
             }
 
             if input_dict['args']['logz']:
@@ -288,11 +317,27 @@ class DynamicPlotter:
                 **arg_dict,
             )
         else:
+            # make colorbar
+            make_cbar: bool = arg_dict.pop('colorbar', False)
+
+            if make_cbar:
+                arg_dict['vmin'] = gdf[arg_dict['c']].min()
+                arg_dict['vmax'] = gdf[arg_dict['c']].max()
+                cbar_dict: dict = {
+                    'cmap': arg_dict['cmap'],
+                    'clim': (arg_dict['vmin'], arg_dict['vmax']),
+                    'clabel': arg_dict['clabel'],
+                    'logz': arg_dict['logz'],
+                }
             output = cls._draw_lines(
                 gdf,
                 **arg_dict,
             )
             if not first:
                 output = output.Path
+
+            # add colorbar
+            if arg_dict['c']:
+                output = output * cls.make_colorbar(**cbar_dict)
 
         return output
