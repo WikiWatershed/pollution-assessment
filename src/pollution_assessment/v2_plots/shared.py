@@ -32,7 +32,7 @@ def add_kwargs(
 ) -> dict:
     """Adds other_kwarg k, v pairs kwargs:dict, with warnings for conflicts."""
     for k, v in other_kwarg.items():
-        if k in kwargs and warn:
+        if k in kwargs and warn and kwargs.get(k, None) != v:
             warnings.warn(
                 f'Kwarg conflict! Overriding default {k}={kwargs[k]} with {k}={v}.',
             )

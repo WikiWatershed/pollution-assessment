@@ -41,7 +41,7 @@ class Plotter(Protocol):
         gdf: gpd.GeoDataFrame,
         first: bool,
         **kwargs,
-    ):
+    ) -> OutputTypes:
         """Returns a single plot.
 
         Arguments:
@@ -265,6 +265,11 @@ def make_map(
         group_column,
     )
 
+    # un-convert any categorical columns
+    for col in gdf.columns:
+        if gdf[col].dtype.name == 'category':
+            gdf[col] = gdf[col].astype(str)
+
     # get the column to group on
     if not group_column:
         group_column = 'index'
@@ -273,7 +278,7 @@ def make_map(
     if group_subset:
         if not isinstance(group_subset, list):
             group_subset = [group_subset]
-        gdf = gdf.loc[getattr(gdf, group_column).isin(group_subset)]
+        gdf = gdf.loc[getattr(gdf, group_column).isin(group_subset)].copy()
 
     extent_dict: ViewExtent = get_extent(gdf, buffer=extent_buffer)
 
@@ -286,7 +291,13 @@ def make_map(
             warnings.warn(
                 f'Dropped {rows1 - rows2} rows due to missing {group_column} values.',
             )
-        gdf = gdf.dissolve(by=group_column, observed=True)
+        gdf = gdf.dissolve(
+            by=group_column,
+            aggfunc='sum',
+            sort=False,
+            dropna=True,
+            observed=True,
+        )
 
     # get color related arguments
     cmap: matplotlib.colors.Colormap = get_cmap(cmap)
