@@ -80,20 +80,6 @@ class DynamicPlotter:
         # set dynamic color if desired
         else:
             arg_dict['clabel'] = arg_dict['c']
-            vrange_dict: dict[str, float | int] = {
-                'vmin': gdf[arg_dict['c']].min(),
-                'vmax': gdf[arg_dict['c']].max(),
-            }
-            if arg_dict['logz']:
-                norm_func = matplotlib.colors.LogNorm(**vrange_dict)
-            else:
-                norm_func = matplotlib.colors.Normalize(**vrange_dict)
-
-            gdf['color'] = (
-                gdf[arg_dict['c']]
-                .apply(norm_func)
-                .apply(arg_dict['cmap'])
-            )
 
         del arg_dict['one_color']
         arg_dict['legend'] = False
@@ -113,8 +99,30 @@ class DynamicPlotter:
                 [1.0 for i in range(len(input_dict['gdf']))],
                 index=input_dict['gdf'].index,
             )
-        colors: Series = input_dict['gdf'].pop('color')
 
+        # format colors
+        color_col = input_dict['args'].pop('c', None)
+        cmap = input_dict['args'].pop('cmap', None)
+
+        if 'colors' not in input_dict['gdf'].columns:
+            vrange_dict: dict[str, float | int] = {
+                'vmin': input_dict['gdf'][color_col].min(),
+                'vmax': input_dict['gdf'][color_col].max(),
+            }
+
+            if input_dict['args']['logz']:
+                norm_func = matplotlib.colors.LogNorm(**vrange_dict)
+            else:
+                norm_func = matplotlib.colors.Normalize(**vrange_dict)
+
+            input_dict['gdf']['colors'] = (
+                input_dict['gdf'][color_col]
+                .apply(norm_func)
+                .apply(cmap)
+            )
+        colors = input_dict['gdf'].pop('colors')
+
+        # generate lines
         for idx, row in input_dict['gdf'].iterrows():
             row_gdf = gpd.GeoDataFrame(
                 [row],
@@ -166,8 +174,6 @@ class DynamicPlotter:
             )
 
         # get rid of kwargs that don't apply to lines
-        kwargs.pop('cmap')
-        kwargs.pop('c')
         kwargs.pop('legend')
         kwargs.pop('hover_cols')
         tiles = kwargs.pop('tiles')
