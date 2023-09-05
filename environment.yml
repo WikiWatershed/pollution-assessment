@@ -1,43 +1,40 @@
 name: drwi_pa
 channels:
-    - conda-forge
-    - defaults
+  - conda-forge
+  - nodefaults # Speeds solving env, by limiting the number of options
+
 dependencies:
-    - python =3.11.*  
+  - python =3.11
 
-    # PyData
-    - pandas >=1.4
-    - geopandas >=0.12.1  #GeoParquet support updated
-    - pyarrow  # for saving to Parquet from GeoPandas
-    - geojson
-    - openpyxl # read/write Excel 2010+ files (.xlsx & .xlsm)
+  # PyData
+  - pandas >=1.4
+  - geopandas >=0.12.1  #GeoParquet support updated
+  - pyarrow  # for saving to Parquet from GeoPandas
+  - geojson
+  - openpyxl # read/write Excel 2010+ files (.xlsx & .xlsm)
 
-    # Database connections, to run first half of stage1/WikiSRAT_Demo.ipynb
-    # - psycopg2  
-    # - sqlalchemy
+  # Hydro Data Tools
+  - pynhd  # HyRiver: provides access to NHD+ V2 data through NLDI and WaterData web services
 
-    # Visualization
-    - matplotlib >=3.5
-    - matplotlib-scalebar
-    - hvplot  # hvPlot installs most HoloViz libs, https://holoviz.org
-    - holoviews >1.15
-    - panel >=0.14 # Major update for dashboarding
-    - geoviews
-    - contextily  # retrieve tile maps from the internet. Installs RasterIO.
+  # Database connections, to run first half of stage1/WikiSRAT_Demo.ipynb
+  # - psycopg2  
+  # - sqlalchemy
 
-    # Interactivity via Jupyter Notebooks
-    - jupyterlab >=3.4
-    - nodejs  # required for many extensions
-    - ipympl  # jupyter-matplotlib, https://github.com/matplotlib/ipympl
-    - ipywidgets  # Required for HoloViz interactivity
-    # - nb_conda  # Conda environment & package access extension from within Jupyter
+  # Visualization
+  - hvplot  # hvPlot installs most HoloViz libs, https://holoviz.org
+  - holoviews >1.15
+  - panel >=0.14 # Major update for dashboarding
+  - geoviews
+  - contextily  # retrieve tile maps from the internet. Installs RasterIO.
 
-    # HyRiver
-    - pynhd >=0.15
-
+  # Interactivity via Jupyter Notebooks
+  - jupyterlab >=3.4
+  - nodejs  # required for many extensions
+  - ipympl  # jupyter-matplotlib, https://github.com/matplotlib/ipympl
+  - ipywidgets  # Required for HoloViz interactivity
   # Dev tools: Language Server Protocol (LSP) (Optional), for...
     # code navigation + hover suggestions + linters + autocompletion + rename
-  - python-lsp-server >=1.7 # LSP extension for Python (pylsp), including:
+  - python-lsp-server >=1.6 # LSP extension for Python (pylsp), including:
     # Rope for Completions and renaming
     # Pyflakes linter to detect various errors
     # McCabe linter for complexity checking
@@ -50,14 +47,13 @@ dependencies:
   - pylsp-mypy  # MyPy type checking for Python >=3.7.
   - jupyterlab-lsp # Provides both server extension and lab extension
 
-    # package management
-    - conda
-    - conda-build
-    - conda-libmamba-solver
-    - zstandard
+  # package management
+  - conda
+  - conda-build
+  - conda-libmamba-solver
+  - zstandard
 
-    # PIP install requirements only if it is not  possible with conda
-    # https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html#using-pip-in-an-environment
-    - pip
-    - pip:
-        # - lckr-jupyterlab-variableinspector  # https://github.com/lckr/jupyterlab-variableInspector
+  # PIP install requirements only if it is not  possible with conda
+  # https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html#using-pip-in-an-environment
+  - pip
+  - pip:
