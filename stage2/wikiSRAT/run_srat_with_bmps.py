@@ -1,7 +1,7 @@
 """
 Created by Sara Geleskie Damiano
 """
-#%%
+# %%
 from pathlib import Path
 import sys
 import logging
@@ -20,7 +20,7 @@ from requests import Session
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
-#%%
+# %%
 # Set up the API client
 from mmw_secrets import (
     wiki_srat_url,
@@ -69,7 +69,7 @@ funding_source_groups = {
     ],
 }
 
-#%%
+# %%
 # Read location data - shapes from national map
 # These are all of the HUC-12's in the HUC-6's 020401, 020402, and 020403
 # I got the list from https://hydro.nationalmap.gov/arcgis/rest/services/wbd/MapServer/6/query?f=json&where=((UPPER(huc12)%20LIKE%20%27020401%25%27)%20OR%20(UPPER(huc12)%20LIKE%20%27020402%25%27)%20OR%20(UPPER(huc12)%20LIKE%20%27020403%25%27))&spatialRel=esriSpatialRelIntersects&outFields=OBJECTID%2Csourcefeatureid%2Cloaddate%2Careaacres%2Careasqkm%2Cstates%2Chuc12%2Cname%2Chutype%2Chumod%2Ctohuc%2Cnoncontributingareaacres%2Cnoncontributingareasqkm&orderByFields=OBJECTID%20ASC&outSR=102100
@@ -114,7 +114,7 @@ super_huc = hucs_to_run.loc[
 super_huc["super_huc"] = "02040x"
 hucs_to_run = pd.concat([hucs_to_run, super_huc]).sort_values(by=["tohuc", "huc"])
 
-#%% Set up logging
+# %% Set up logging
 log_file = restoration_save_path + "run_srat_with_bmps.log"
 
 # logging.basicConfig(filename=log_file, encoding="utf-8", level=logging.INFO)
@@ -142,7 +142,7 @@ this_run_start = (
 
 logging.info("Starting script at {}".format(this_run_start))
 
-#%%
+# %%
 # helper functions
 
 # taken from https://github.com/WikiWatershed/model-my-watershed/blob/f9591f390c4f54751bf34019f3cc126f45892ca6/src/mmw/mmw/settings/gwlfe_settings.py#L623-L639
@@ -166,6 +166,7 @@ SRAT_KEYS = {
     "Reach Concentration": "conc",
     "Point Source Derived Concentration": "conc_ptsource",
 }
+
 
 # taken from https://github.com/WikiWatershed/model-my-watershed/blob/31566fefbb91055c96a32a6279dac5598ba7fc10/src/mmw/apps/modeling/tasks.py#L72-L96
 def format_for_srat(
@@ -214,6 +215,7 @@ _user = (PG_CONFIG["user"],)
 _password = (PG_CONFIG["password"],)
 _port = PG_CONFIG["port"]
 _flag = "base"
+
 
 # CREATE A COUPLE HELPER FUNCTIONS TO RUN THE MICROSERVICE
 def respond(err, res=None):
@@ -275,6 +277,7 @@ srat_session.verify = True
 srat_session.mount("https://", adapter)
 srat_session.mount("http://", adapter)
 srat_session.headers.update({"x-api-key": wiki_srat_key})
+
 
 # from https://github.com/WikiWatershed/model-my-watershed/blob/31566fefbb91055c96a32a6279dac5598ba7fc10/src/mmw/apps/modeling/tasks.py#L375-L409
 def run_srat(
@@ -419,7 +422,7 @@ def format_wikisrat_return(
     return copy.deepcopy(return_dict)
 
 
-#%%
+# %%
 # create empty lists to hold results
 cum_results = {
     "catchment_total_local_load": [],
@@ -431,7 +434,7 @@ cum_results = {
 }
 
 
-#%%
+# %%
 # huc8_id='02040205'
 # huc8=hucs_to_run.groupby(by=["super_huc"]).get_group(huc8_id)
 # run_group=list(funding_source_groups.keys())[1]
@@ -546,7 +549,7 @@ for huc8_id, huc8 in hucs_to_run.groupby(by="super_huc"):
     #     break
     # break
 
-#%%
+# %%
 # join various results and save csv's
 for all_res_key, all_list in cum_results.items():
     if len(all_list) > 0:
@@ -561,7 +564,7 @@ for all_res_key, all_list in cum_results.items():
         all_catch_frame.to_csv(restoration_csv_path + all_res_key + csv_extension)
 
 
-#%%
+# %%
 logging.info("DONE!")
 
 # %%
