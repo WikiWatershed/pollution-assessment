@@ -21,10 +21,11 @@ dependencies:
   # - sqlalchemy
 
   # Visualization
-  - hvplot  # hvPlot installs most HoloViz libs, https://holoviz.org
+  - hvplot  # hvPlot installs most HoloViz libs, https://holoviz.org, including matplotlib
   - holoviews >1.15
   - panel >=0.14 # Major update for dashboarding
   - geoviews
+  - matplotlib-scalebar
   - contextily  # retrieve tile maps from the internet. Installs RasterIO.
 
   # Interactivity via Jupyter Notebooks
@@ -51,7 +52,6 @@ dependencies:
   - conda
   - conda-build
   - conda-libmamba-solver
-  - zstandard
 
   # PIP install requirements only if it is not  possible with conda
   # https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html#using-pip-in-an-environment
