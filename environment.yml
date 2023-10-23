@@ -15,6 +15,7 @@ dependencies:
 
   # Hydro Data Tools
   - pynhd  # HyRiver: provides access to NHD+ V2 data through NLDI and WaterData web services
+  - pygeohydro # HyRiver: for accessing hydrology data through web services
 
   # Database connections, to run first half of stage1/WikiSRAT_Demo.ipynb
   # - psycopg2  
