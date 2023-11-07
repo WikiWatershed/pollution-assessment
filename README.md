@@ -39,9 +39,10 @@ Create the `drwi_pa` environment from our [`environment.yml`](environment.yml) f
 1. Use the **Import** button on [Anaconda Navigator's Environments tab](https://docs.anaconda.com/anaconda/navigator/overview/#environments-tab), or 
 2. Use the following [`conda create`](https://docs.conda.io/projects/conda/en/latest/user-guide/getting-started.html#managing-environments) command in your terminal or console,  replacing `path/environment.yml` with the full file pathway to the [`environment.yml`](environment.yml) file in the local cloned repository.
 
-    ```shell
-    conda env create --file path/environment.yml
-    ```
+```shell
+conda env create --file path/environment.yml
+```
+
 To update your environment, either use Anaconda Navigator, or run the following command:  
 
 ```shell
