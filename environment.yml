@@ -7,8 +7,8 @@ dependencies:
   - python =3.11
 
   # PyData
-  - pandas >=1.4
-  - geopandas >=0.12.1  #GeoParquet support updated
+  - pandas >=2.1 # 
+  - geopandas >=0.14.1  #GeoParquet 1.0.0 supported
   - pyarrow  # for saving to Parquet from GeoPandas
   - geojson
   - openpyxl # read/write Excel 2010+ files (.xlsx & .xlsm)
@@ -58,3 +58,5 @@ dependencies:
   # https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html#using-pip-in-an-environment
   - pip
   - pip:
+    - lonboard # very fast vector maps, https://developmentseed.org/blog/2023-10-23-lonboard
+        # conda didn't have the latest: https://anaconda.org/conda-forge/lonboard

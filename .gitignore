@@ -177,3 +177,4 @@ pollution-assessment/stage2/FieldDoc_API/private
 stage2/Protected_Lands/mmw_results/json_results/*
 stage2/wikiSRAT/json_results/*
 stage2/temp/*
+stage2/data_output/test.parquet
