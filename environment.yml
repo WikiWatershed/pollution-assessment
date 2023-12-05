@@ -28,6 +28,7 @@ dependencies:
   - geoviews
   - matplotlib-scalebar
   - contextily  # retrieve tile maps from the internet. Installs RasterIO.
+  - cmasher # Adds function to subset colormaps, including from HoloViz's colorcet
 
   # Interactivity via Jupyter Notebooks
   - jupyterlab >=3.4
