@@ -33,7 +33,7 @@ Place your copy of this repo in any convenient location on your computer.
 
 #### 3. Create a Conda Environment for this Repository (optional)
 
-Although HSP2 can be run from the default `base` environment created by Anaconda, we recommend creating a custom environment that includes the exact combination of software dependencies that we've used in development and testing.
+Although Pollution Assessment can be run from the default `base` environment created by Anaconda, we recommend creating a custom environment that includes the exact combination of software dependencies that we've used in development and testing.
 
 Create the `drwi_pa` environment from our [`environment.yml`](environment.yml) file, which lists all primary dependencies, using one of these approaches: 
 1. Use the **Import** button on [Anaconda Navigator's Environments tab](https://docs.anaconda.com/anaconda/navigator/overview/#environments-tab), or 
