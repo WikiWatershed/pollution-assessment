@@ -11,6 +11,15 @@ tss_load_avoid,0.0
 tn_load_xsnps,-1404900.6111959713
 tp_load_xsnps,39662.799288064874
 tss_load_xsnps,116742742.35391268
+tn_load_red1,0.0
+tp_load_red1,0.0
+tss_load_red1,0.0
+tn_load_red2,0.0
+tp_load_red2,0.0
+tss_load_red2,0.0
+tn_load_red3,88.02439941371551
+tp_load_red3,14.272145741601825
+tss_load_red3,7853.14431417377
 tn_load_rem1,-1404900.6111959713
 tp_load_rem1,39662.799288064874
 tss_load_rem1,116742742.35391268

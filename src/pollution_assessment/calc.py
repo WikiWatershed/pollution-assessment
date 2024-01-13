@@ -286,7 +286,6 @@ def add_ps(
     Returns:
         The input GeoDataFrame with three extra `_ps` columns added .
     """
-
     calc_suffix = 'ps'
 
     if comid_type == 'reach':
@@ -359,6 +358,53 @@ def add_xsnps(
     if comid_type == 'catch':
         gdf['tss_loadrate_xsnps'] = gdf['tss_loadrate_xs']
 
+    return gdf
+
+
+def add_reduced(
+    comid_type: str, 
+    gdf: gpd.GeoDataFrame,
+    df_in: pd.DataFrame,
+    group_key: int, 
+    run_type: str = 'single',
+) -> gpd.GeoDataFrame:
+    """ Add calculated "reduced" pollution columns to the combined 
+    PA2 results GeoDataFrame.
+
+    Reduced pollution is calcuated by subtracting restoration model results
+    from baseline model results.
+
+    Args:
+        comid_type: 'reach' or 'catch'
+        gdf: PA2 results GeoDataFrame with geometries for mapping
+        df_in: WikiSRAT results for multiple run groups
+        group_key: Run group key
+
+    Returns:
+        The input GeoDataFrame with three extra `_red` columns added .
+    """
+    calc_suffix = f'red{group_key}'
+
+    if comid_type == 'reach':
+        quantity_type = 'conc'
+        normalize_by = 1
+    elif comid_type == 'catch':
+        quantity_type = 'loadrate'
+        normalize_by = gdf.catchment_hectares
+    else:
+        print("Error: comid_type must be 'reach' or 'catch'")
+
+    base_df = select_run(comid_type, df_in, run_groups[0], run_type, ps=False)
+    rest_df = select_run(comid_type, df_in, run_groups[group_key], run_type, ps=False)
+
+    # Calculate and add each new column by looping through `pollutants` dict
+    for pollutant in pollutants.items():
+        # Calculate reduced, using the old name `pollutant[0]`
+        reduced_df = (  base_df[f'{pollutant[0]}'] 
+                      - rest_df[f'{pollutant[0]}'])/ normalize_by
+        # Add to reduced columns to the GDF, using the new name `pollutant[1]`
+        gdf[f'{pollutant[1]}_{quantity_type}_{calc_suffix}'] = reduced_df
+    
     return gdf
 
 
