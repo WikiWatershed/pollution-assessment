@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 import geopandas as gpd
 
@@ -462,3 +463,49 @@ def add_avoided(
         )
     
     return gdf
+
+# Adapted from `are_fromhucs_in_index()` in `stage2/PA2_2b_AggregateAttenuated.ipynb`
+def are_inlets_in_index(
+    df: pd.DataFrame,
+    inlets: np.ndarray,
+) -> np.ndarray[bool]:
+    """Determines if each HUC or basin ID in an array is in a dataframe's index.
+    Returns a boolean array corresponding to the input array.
+    """
+    if type(inlets) == np.ndarray:
+        inarray = np.isin(inlets, df.index)
+    else:
+        inarray = False
+    return inarray
+
+def get_inlet_loads(
+    df: pd.DataFrame, 
+    inlets_column: str ,
+    index_value: str | int,
+    var: str, 
+) -> list:
+    """Fetches list of a HUCs that flow into a HUC, if any.
+    var = f'{pollutant}_load{var_suffix}'
+    """
+    inlets_array = df.at[index_value,inlets_column]
+    if type(inlets_array) == np.ndarray:
+        inlets_mask = are_inlets_in_index(df, inlets_array)
+        ds = df[var][inlets_array[inlets_mask]]
+    else:
+        ds = []
+    return ds
+
+def calc_net_load(
+    df: pd.DataFrame, 
+    inlets_column: str ,
+    index_value: str | int,
+    var: str, 
+) -> float:
+    """Calculates the net load of a HUC, 
+    by subtracting inflow loads from outflow load.
+    var = f'{pollutant}_load{var_suffix}'
+    """
+    net = (df.at[index_value,var]
+        - sum(get_inlet_loads(df, inlets_column, index_value, var))
+    )
+    return net
