@@ -87,8 +87,8 @@ def LatLonExtent(
     values = cluster_gdf[cluster_gdf.index == cluster_name].geometry.bounds
     y_extent = (values.maxy - values.miny)
     x_extent = (values.maxx - values.minx)
-    y_extent = y_extent[0]
-    x_extent = x_extent[0]
+    y_extent = y_extent.iloc[0]
+    x_extent = x_extent.iloc[0]
 
     # add 5 percent cushion
     x_cushion = x_extent * 0.05
@@ -135,7 +135,7 @@ def LatLonExtent(
     # used to define zoom level for basemap
     area = x_extent*y_extent / 1000000000
 
-    return lon_max[0], lon_min[0], lat_max[0], lat_min[0], area, h_v
+    return lon_max.iloc[0], lon_min.iloc[0], lat_max.iloc[0], lat_min.iloc[0], area, h_v
 
 
 def PlotMaps(
@@ -352,10 +352,10 @@ def LatLonExtent_FA(
     for fa in fa_list:
         values = focusarea_gdf[focusarea_gdf.index == fa].geometry.bounds
         try:
-            mn_x = min(mn_x, values.minx[0])
-            mx_x = max(mx_x, values.maxx[0])
-            mn_y = min(mn_y, values.miny[0])
-            mx_y = max(mx_y, values.maxy[0])
+            mn_x = min(mn_x, values.minx.iloc[0])
+            mx_x = max(mx_x, values.maxx.iloc[0])
+            mn_y = min(mn_y, values.miny.iloc[0])
+            mx_y = max(mx_y, values.maxy.iloc[0])
         except:
             pass
 

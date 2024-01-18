@@ -254,7 +254,7 @@ class DynamicPlotter:
             hover_cols: list[str] - Columns to show in hover tooltip (default=[index.name]).
             logz: bool - Whether to use log scale for color (default=True).
             tiles: str - Basemap tile to use (default='CartoLight').
-            cmap: str - Colormap to use (default='RdYlGn_r').
+            cmap: str - Colormap to use (default='cet_CET_L18').
 
         Returns:
             gv.Overlay: Holoviews overlay of dynamic plots.
@@ -269,7 +269,7 @@ class DynamicPlotter:
             'legend': False,
             'logz': True,
             'tiles': 'CartoLight',
-            'cmap': matplotlib.colormaps['RdYlGn_r'],
+            'cmap': matplotlib.colormaps['cet_CET_L18'],
             'crs': crs_dict['crs'],
             'xlabel': crs_dict['x_label'],
             'ylabel': crs_dict['y_label'],

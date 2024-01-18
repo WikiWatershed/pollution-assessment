@@ -102,7 +102,7 @@ def get_cmap(
     cmap: Optional[str | matplotlib.colors.Colormap] = None,
 ) -> matplotlib.colors.Colormap:
     if not cmap:
-        cmap = matplotlib.colormaps['RdYlGn_r']
+        cmap = matplotlib.colormaps['cet_CET_L18']
     if isinstance(cmap, str):
         cmap = matplotlib.colormaps[cmap]
     elif not isinstance(cmap, matplotlib.colors.Colormap):
@@ -222,7 +222,7 @@ def make_map(
         how: Whether to return a static or dynamic plot.
             Default is dynamic w/ holoviews.
         color_column: Column to use for coloring.
-        cmap: Colormap to use. Default is RdYlGn_r.
+        cmap: Colormap to use. Default is 'cet_CET_L18'.
         group_column: Column to use for grouping geometries.
             Ex: A HUC12 column could group COMIDs by HUC12.
         group_subset: Subset of the index OR group_column to plot.
