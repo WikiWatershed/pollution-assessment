@@ -106,6 +106,30 @@ comid_test_dict = {
 # Functions
 # *****************************************************************************
 
+def convert_kg_to_lbs(
+    data_in: float | pd.Series,
+) -> float | pd.Series:
+    """Convert kilograms to US pounds mass."""
+    data_out = data_in * 2.20462
+    return data_out
+
+
+def convert_ha_to_ac(
+    data_in: float | pd.Series,
+) -> float | pd.Series:
+    """Convert hectares to US acres."""
+    data_out = data_in * 2.47105
+    return data_out
+
+
+def convert_kgha_to_lbsac(
+    data_in: float | pd.Series,
+) -> float | pd.Series:
+    """Convert kilograms per ha (kg/ha) to US pounds per acre (lbs/ac)."""
+    data_out = data_in * 2.20462 / 2.47105
+    return data_out
+
+
 def select_run(
     comid_type: str,
     df_in: pd.DataFrame, 
