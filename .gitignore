@@ -179,3 +179,4 @@ stage2/wikiSRAT/json_results/*
 stage2/temp/*
 stage2/data_output/test.parquet
 geography/enhd_nhdplusatts.parquet
+stage2/figure_output/DRWI_report_crop/

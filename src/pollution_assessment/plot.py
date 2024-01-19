@@ -143,8 +143,8 @@ def PlotMaps(
     gdf_catch: gpd.GeoDataFrame,
     var_reach: str,
     var_catch: str,
-    targ_reach,
-    targ_catch,
+    targ_reach: float = None,
+    targ_catch: float = None,
     colormap='cet_CET_L18',
     cl=None,
     cluster_gdf=None,
@@ -153,23 +153,52 @@ def PlotMaps(
     zoom=False,
     diff=False,
     include_reach=False,
+    units_convert: bool = False,
+    var_reach_scale: str = None,
+    var_catch_scale: str = None,
 ):
     '''
     creates a side by side map of data from reaches and subcatchments, and saves to SVG. 
     Might need to add: naming convention if restoration vs base. 
     Alternatively, can return the fig, ax so that manual adjustments can be made within the cell.
     '''
+    # Populate defaults
+    if targ_reach == None: targ_reach = eval(f'calc.{var_reach[0:7]}_target')
+    if targ_catch == None: targ_catch = eval(f'calc.{var_catch[0:11]}_target')
+    print('Target values:', targ_reach, targ_catch)
+    
+    if var_reach_scale == None: 
+        var_reach_scale = var_reach
+        columns_reach = [var_reach, gdf_reach.geometry.name]
+    else:
+        columns_reach = [var_reach, var_reach_scale, gdf_reach.geometry.name]
+    if var_catch_scale == None: 
+        var_catch_scale = var_catch
+        columns_catch = [var_catch, gdf_catch.geometry.name]
+    else:
+        columns_catch = [var_catch, var_catch_scale, gdf_catch.geometry.name]
+    print('Variable for scaling:', var_reach_scale, var_catch_scale)
+
     # create df for plot (dp), remove <0 values for plotting
     # Avoids 'SettingWithCopyWarning'. See https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy. dp_catch = gdf_catch[[var_catch, 'geometry']].copy()  # Make explict copy, to avoid 'SettingWithCopyWarning'
-    dp_reach = gdf_reach.loc[:, (var_reach, gdf_reach.geometry.name)]
+    dp_reach = gdf_reach.loc[:, columns_reach].copy()
     # Avoids 'SettingWithCopyWarning'.
-    dp_catch = gdf_catch.loc[:, (var_catch, gdf_catch.geometry.name)]
+    dp_catch = gdf_catch.loc[:, columns_catch].copy()
+    # Convert Units to US customary
+    if units_convert == False:
+        units_loadrate = 'kg/ha'
+    else:
+        units_loadrate = 'lbs/ac'
+        dp_catch[var_catch] = calc.convert_kgha_to_lbsac(dp_catch[var_catch])
+        if var_reach != var_reach_scale:
+            dp_catch[var_catch_scale] = calc.convert_kgha_to_lbsac(dp_catch[var_catch_scale])
+        targ_catch = calc.convert_kgha_to_lbsac(targ_catch)
 
     mask_reach = dp_reach[var_reach] < targ_reach / 10
     mask_catch = dp_catch[var_catch] < targ_catch / 10
 
-    dp_reach.loc[mask_reach, var_reach] = targ_reach / 10
-    dp_catch.loc[mask_catch, var_catch] = targ_catch / 10
+    dp_reach.loc[mask_reach, [var_reach]] = targ_reach / 10
+    dp_catch.loc[mask_catch, [var_catch]] = targ_catch / 10
 
     # initialize figure
     fig, (ax1, ax2) = plt.subplots(1, 2)
@@ -180,12 +209,12 @@ def PlotMaps(
 
     # Set midpoint lower if a difference calculation,
     if diff == False:
-        min_reach = dp_reach[var_reach].min()
-        min_catch = dp_catch[var_catch].min()
+        min_reach = max(dp_reach[var_reach_scale].min(), targ_reach / 10)
+        min_catch = max(dp_catch[var_catch_scale].min(), targ_catch / 10)
         mid_reach = targ_reach
         mid_catch = targ_catch
-        max_reach = dp_reach[var_reach].quantile(0.99)
-        max_catch = dp_catch[var_catch].quantile(0.99)
+        max_reach = dp_reach[var_reach_scale].quantile(0.99)
+        max_catch = dp_catch[var_catch_scale].quantile(0.99)
     else:
         min_reach = targ_reach
         min_catch = targ_catch
@@ -199,7 +228,7 @@ def PlotMaps(
     print(
         f'Reach values (min, mid, max) = ({min_reach}, {mid_reach}, {max_reach})')
     print(
-        f'Catch values (min, mid, max) = ({min_catch}, {mid_catch}, {max_catch})')
+        f'Catch values (min, mid, max) = ({min_catch}, {mid_catch}, {max_catch}) in {units_loadrate}')
 
     # normalize around target with MidPointLogNorm
     lognorm_reach = MidPointLogNorm(vmin=min_reach, vmax=max_reach,
@@ -211,11 +240,21 @@ def PlotMaps(
     r_alphas = [1 if i < min_reach else 0 for i in dp_reach[var_reach]]
     c_alphas = [0 if i < min_catch else 1 for i in dp_catch[var_catch]]
 
-    r = dp_reach.plot(column=var_reach, lw=1, ax=ax1,
-                      norm=lognorm_reach,
-                      cmap=colormap)  # matplotlib.colors.LogNorm(vmin, vmax), cmap='RdYlGn_r')
-    if zoom != False:
-        r_below = dp_reach.plot(lw=1, ax=ax1, color='#D4DADC', alpha=r_alphas)
+    if zoom == False: 
+        reach_line_width = 1.0
+    elif zoom == True:
+        reach_line_width = 2.5
+        
+    # make data plots
+    r = dp_reach.plot(
+        column=var_reach, lw=reach_line_width, ax=ax1,
+        norm=lognorm_reach,
+        cmap=colormap,  # matplotlib.colors.LogNorm(vmin, vmax), cmap='RdYlGn_r')
+    )
+    if zoom == True:
+        r_below = dp_reach.plot(lw=1.5, ax=ax1, 
+                                color='#D4DADC', 
+                                alpha=r_alphas)
 
     c = dp_catch.plot(column=var_catch, lw=0.1, ax=ax2,
                       norm=lognorm_catch,
@@ -272,7 +311,7 @@ def PlotMaps(
 
     # set axis titles
     ax1.set_title(var_reach + " (mg/L) for Reaches")
-    ax2.set_title(var_catch + " (kg/ha) for Catchments")
+    ax2.set_title(var_catch + f' ({units_loadrate}) for Catchments')
 
     # add colorbar - catchment
     # adjusts the position of the color bar: right position, bottom, width, top
@@ -329,10 +368,11 @@ def PlotMaps(
         zoom_name = "Zoom_"
 
     # Save figure
-    plt.savefig(
-        Path.cwd() / 'figure_output'
-        / f'{cl_name}{fa_name}{zoom_name}{var_reach}_{var_catch}'
-    )
+    if units_convert==False:
+        save_path = Path.cwd() / 'figure_output' / f'{cl_name}{fa_name}{zoom_name}{var_reach}_{var_catch}'
+    else:
+        save_path = Path.cwd() / 'figure_output' / f'{cl_name}{fa_name}{zoom_name}{var_reach}_{var_catch}_lbs'
+    plt.savefig(save_path)
     # Display figure
     plt.show()
 
@@ -702,27 +742,32 @@ def PlotMaps_FA_single_pane(
     focusarea_gdf: gpd.GeoDataFrame = None,
     include_reach: bool = False,
     streamorder_gdf: gpd.GeoDataFrame = None,
-    diff: bool = False
+    diff: bool = False,
+    units_convert: bool = False,
 ):
     '''
     plot maps with focus areas
     '''
     # remove <0 values for plotting, setting to target/100
-    dp_geom = remove_negatives(df_geom,
-                               var_geom,
-                               targ_geom,
-                               comid_type)
+    dp_geom = remove_negatives(
+        df_geom,
+        var_geom,
+        targ_geom,
+        comid_type,
+    )
 
     # initialize figure
     fig, ax1 = plt.subplots(figsize=(7, 7))
 
     # Set midpoint lower if a difference calculation,
-    min_geom, mid_geom, max_geom = color_normalization_bounds(dp_geom,
-                                                              df_geom,
-                                                              var_geom,
-                                                              targ_geom,
-                                                              comid_type,
-                                                              diff=False)
+    min_geom, mid_geom, max_geom = color_normalization_bounds(
+        dp_geom,
+        df_geom,
+        var_geom,
+        targ_geom,
+        comid_type,
+        diff=False,
+    )
 
     # normalize around target with MidPointLogNorm
     lognorm_geom = MidPointLogNorm(vmin=min_geom,
@@ -737,6 +782,14 @@ def PlotMaps_FA_single_pane(
 
     # Plot catchments or reaches
     if comid_type == 'catchment':
+        # Convert Units to US customary
+        if units_convert == False:
+            units_loadrate = 'kg/ha'
+        else:
+            units_loadrate = 'lbs/ac'
+            dp_geom[var_geom] = calc.convert_kgha_to_lbsac(dp_geom[var_geom])
+            targ_geom = calc.convert_kgha_to_lbsac(targ_geom)
+
         dp_geom.plot(column=var_geom,
                      lw=0.1,
                      ax=ax1,
@@ -752,7 +805,7 @@ def PlotMaps_FA_single_pane(
             rch = major_streams.plot(linewidth=(
                 major_streams['streamorder'] - 1) / 2, ax=ax1, color='cornflowerblue')
 
-        ax1.set_title(var_geom + " (kg/ha) for Catchments: \n %s Cluster" % cl)
+        ax1.set_title(var_geom + f' ({units_loadrate}) for Catchments: \n {cl} Cluster')
 
     if comid_type == 'reach':
         # Add streamreaches
